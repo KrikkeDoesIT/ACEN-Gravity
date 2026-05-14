@@ -18,19 +18,20 @@
 
 **Stages 1–5 — Initial document pass complete; awaiting review.**
 
-Stage map (full detail in `WORKING_APPROACH.md` §3):
+Stage map (full detail in `WORKING_APPROACH.md` §4 — operating model upgraded to **9 stages**):
 
 | Stage | Title | Status |
 |---|---|---|
-| 0 | Working approach defined | ✅ |
+| 0 | Working approach v2 (9-stage model + demo story + vertical slice + kill criteria + doc control) | ✅ |
 | 1 | Product framing | 🟢 drafted; awaiting Cycle 1 sign-off |
 | 2 | Architecture framing | 🟢 drafted; awaiting Cycle 2 sign-off |
 | 3 | Module deep dives (AD/BH/SF/Entra) | 🟢 drafted; awaiting Cycle 3 sign-off |
 | 4 | UX & information architecture | 🟢 drafted; awaiting Cycle 4 sign-off |
 | 5 | Security & GDPR | 🟢 drafted; awaiting Cycle 5 sign-off |
-| 6 | POC backlog | 🟡 skeleton in `TASKS.md`; refined after Cycles 1–5 |
-| 7 | Management review | ⬜ pending |
-| 8 | Build preparation & POC build | ⬜ pending |
+| 6 | POC backlog | 🟡 skeleton in `TASKS.md`; refined after Cycles 1–5 (vertical-slice items must be marked) |
+| 7 | Management review (go/no-go on MVP) | ⬜ pending |
+| 8 | **Build preparation** (final backlog · skeleton · sample data plan · dev handoff · slice tasks ready) | ⬜ pending |
+| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | ⬜ pending |
 
 ---
 
@@ -96,11 +97,12 @@ Stage map (full detail in `WORKING_APPROACH.md` §3):
 4. **Cycle 3 review** — `AD_MODULE_DESIGN.md`, `AD_TOOLKIT_DESIGN.md`, `BLOODHOUND_ANALYZER_DESIGN.md`, `SILVERFORT_MODULE_DESIGN.md`, `ENTRA_MODULE_DESIGN.md`. Output: module sign-off + close the 16 items in `REVIEW_NOTES.md`.
 5. **Cycle 4 review** — `UI_DESIGN_DIRECTION.md`, `VISUAL_REFERENCES.md`. Output: UX sign-off; brand owner confirmation on D-0010 (Trinidad usage, ≤ 2 px radius).
 6. **Cycle 5 review** — `SECURITY_AND_GDPR.md`. Output: security boundaries sign-off for POC.
-7. **Cycle 6** — refine `TASKS.md` POC backlog to ≤ 40 items.
-8. **Cycle 7** — Management review.
-9. **Stage 8** — Build begins.
+7. **Cycle 6** — refine `TASKS.md` POC backlog to ≤ 40 items; mark vertical-slice tasks per `WORKING_APPROACH.md` §6.
+8. **Cycle 7** — Management review (go/no-go vs. kill criteria, `WORKING_APPROACH.md` §20).
+9. **Stage 8 — Build preparation** (architecture skeleton, sample data plan, dev handoff) → Cycle 8 sign-off.
+10. **Stage 9 — POC build** begins (vertical slice first, then horizontal expansion).
 
-Suggested cadence: see `WORKING_APPROACH.md` §12 — five working sessions to reach build-ready.
+Suggested cadence: see `WORKING_APPROACH.md` §16 — five working sessions to reach build-ready.
 
 ---
 
@@ -123,4 +125,4 @@ None at this time.
 
 ---
 
-*Last updated: 2026-05-15 — Stages 1–5 drafted; ready for Cycle 1 review.*
+*Last updated: 2026-05-15 — Stages 1–5 drafted; operating model upgraded to 9 stages (D-0012 … D-0017); ready for Cycle 1 review.*

@@ -116,6 +116,63 @@ Decision: Repository contains only synthetic / fabricated sample data. Real cust
 Consequences: Test datasets must be designed (synthetic AD forest, synthetic SharpHound graph, etc.). `.gitignore` rules enforce this for evidence upload directories.
 Linked: `SECURITY_AND_GDPR.md`, `TASKS.md`.
 
+### D-0012 — Operating model split into 9 stages (Stage 8 = Build prep; Stage 9 = POC build)
+Date: 2026-05-15
+Status: proposed (pending Cycle 1 sign-off of updated `WORKING_APPROACH.md`)
+Owner: Kristof (requested) / Claude Code (drafted)
+Context: The previous 8-stage model bundled "build preparation" and "POC build" into a single Stage 8. This blurred a meaningful boundary: preparation is documentation + skeleton + sample data + handoff (no business code); build is implementation against the prepared backlog. Bundling them invites premature coding.
+Decision: Split into Stage 8 (Build preparation: final POC backlog, architecture skeleton with no business logic, sample data plan, developer handoff, implementation task structure with the first vertical slice marked) and Stage 9 (POC build: working POC, tests where practical, demo flow, report preview, management review pack). Stage 8 ends with Cycle 8 sign-off; Stage 9 ends with Cycle 9 sign-off against the Definition of Done.
+Consequences: `WORKING_APPROACH.md` §4 (stage map), §9 (review cycles), §16 (sessions), §18 (DoR), §22 (next step). `PROJECT_STATE.md`, `TASKS.md`, `REVIEW_NOTES.md` extended to 9 stages / 9 cycles. No code starts before Cycle 8 sign-off.
+Linked: `WORKING_APPROACH.md`, `PROJECT_STATE.md`, `TASKS.md` (Stage 8 + Stage 9), `REVIEW_NOTES.md`.
+
+### D-0013 — POC V1 demo story is the project's north star
+Date: 2026-05-15
+Status: proposed
+Owner: Kristof / Claude Code
+Context: A broad POC scope across four modules invites scope creep unless one concrete demo story is the authoritative scope filter. Without a north-star story, every interesting idea finds a way into POC V1 and the management decision point is missed.
+Decision: Adopt one demo story (`WORKING_APPROACH.md` §3) as the authoritative scope filter for POC V1. Every feature, screen, control, and document section must support this story. If it does not, it is mocked, postponed, or removed.
+
+> *"We upload AD evidence, BloodHound data, Silverfort evidence, and mocked Entra data for one customer. The platform identifies a critical AD attack path, shows that the involved account lacks Silverfort coverage, links the account to Entra privileged context, generates a prioritized finding, creates a remediation task, and produces a customer-ready report section."*
+
+Consequences: The demo story is the anchor for Cycle 7 management review. Sample data is shaped to make it run end-to-end (D-0015). Vertical slice scope (D-0014) is derived directly from it. New `WORKING_APPROACH.md` §3, §14 checklist items, §16 Session 1.
+Linked: `WORKING_APPROACH.md`, `POC_V1_SCOPE.md` §4 demo journey.
+
+### D-0014 — Thin vertical slice first; no horizontal expansion until the slice is proven
+Date: 2026-05-15
+Status: proposed
+Owner: Claude Code (Software Architect role) + Kristof
+Context: Building four module pages in parallel produces four half-finished surfaces and no proven lifecycle. The risk: management sees impressive screens but no end-to-end story.
+Decision: Stage 9 starts with one end-to-end vertical slice (Customer → Assessment Run → AD + BH evidence load → one critical path parsed → one Finding → review → publish → customer-visible view → one Report preview). Horizontal expansion to Silverfort, Entra, full control catalog, cross-module correlation, additional UI pages, and additional reports starts **only** after the slice is reviewed and signed off.
+Consequences: `TASKS.md` Stage 9 reorganized into `9.0 Vertical slice (HARD GATE)` followed by `9.1+ horizontal` work. Slice tasks are tagged `slice`; horizontal tasks are tagged `horizontal` and blocked on slice review. New `WORKING_APPROACH.md` §6.
+Linked: `WORKING_APPROACH.md` §6, `TASKS.md` (Stage 9).
+
+### D-0015 — Sample data plan is a Stage 8 deliverable; ownership split (realism vs structure/safety)
+Date: 2026-05-15
+Status: proposed
+Owner: Kristof (realism owner) + Claude Code (structure/safety/docs owner)
+Context: Sample data quality directly determines whether the POC demo lands or feels like a toy (R-0009). Without explicit ownership, sample data quality slips between roles.
+Decision: Sample data is a named Stage 8 deliverable (`WORKING_APPROACH.md` §13). Kristof validates whether each dataset is realistic from a security / domain perspective (would a consultant find it credible?). Claude Code ensures the data is safe to commit (synthetic, anonymized, or sanitized — never real customer evidence), structured (loadable via the same code path real evidence would use), documented (`SAMPLE_DATA_README.md`), and isolated under `tests/fixtures/`.
+Consequences: New `WORKING_APPROACH.md` §13. `TASKS.md` §8.2 owns the implementation; T-8007 records Kristof sign-off on realism. Re-affirms D-0011 (synthetic-only).
+Linked: D-0011, `WORKING_APPROACH.md` §13, `TASKS.md` §8.2, `RISKS.md` (R-0009, R-0014).
+
+### D-0016 — POC V1 kill criteria are explicit and feed the Cycle 7 management decision
+Date: 2026-05-15
+Status: proposed
+Owner: Kristof + ACEN management
+Context: The POC exists to validate the concept, including the possibility of validating it *negatively* (a go/no-go decision on MVP investment). Without explicit kill criteria, the decision drifts toward "looks good, let's continue" by default.
+Decision: A list of 10 kill criteria (`WORKING_APPROACH.md` §20) is reviewed at Cycle 7 (and re-applied at Cycle 9). If any criterion is clearly true, the project does not proceed to MVP as-is; the response is documented as one of: reduce scope, adjust demo journey, postpone feature, or stop MVP investment. Triggering a kill criterion is **not failure** — it is the POC doing its job.
+Consequences: Management review pack must walk through each kill criterion and record the decision. `RISKS.md` references the criteria. New `WORKING_APPROACH.md` §20.
+Linked: `WORKING_APPROACH.md` §20, `RISKS.md`.
+
+### D-0017 — Documentation control rules (size cap, executive summary, no duplication)
+Date: 2026-05-15
+Status: proposed
+Owner: Claude Code (Documentation / Reviewer role)
+Context: Several module design docs already exceed ~800 lines (AD, BloodHound, Silverfort, Entra). Without explicit control rules, documentation grows into a second product to maintain and review burden rises.
+Decision: Documentation is governed by explicit rules (`WORKING_APPROACH.md` §15): focused per file, cross-reference instead of duplicate, executive summary at the top of docs ≥ ~400 lines, soft ~800-line cap triggers a per-doc decision (summary / appendix split / accept). Updating existing docs is preferred over creating new versions. The Documentation / Reviewer role actively applies these rules.
+Consequences: Per-doc decisions at Cycle 3 review for the four module docs that exceed the cap. New `REVIEW_NOTES.md` items for any duplication found. `WORKING_APPROACH.md` includes an executive summary at the top (now ~600 lines).
+Linked: `WORKING_APPROACH.md` §15, `REVIEW_NOTES.md`.
+
 ---
 
-*Last updated: 2026-05-14.*
+*Last updated: 2026-05-15 — D-0012 … D-0017 added for the 9-stage operating-model update.*

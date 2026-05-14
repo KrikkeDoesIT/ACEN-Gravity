@@ -8,7 +8,7 @@
 
 | Cycle | Title | Reviewer | Status | Date | Notes |
 |---|---|---|---|---|---|
-| 1 | Concept & POC scope | Kristof | ⬜ pending | — | — |
+| 1 | Concept & POC scope (incl. demo story §3) | Kristof | ⬜ pending | — | — |
 | 2 | Architecture & module boundaries | Kristof | ⬜ pending | — | — |
 | 3a | AD module | Kristof | ⬜ pending | — | — |
 | 3b | BloodHound Analyzer | Kristof | ⬜ pending | — | — |
@@ -16,8 +16,10 @@
 | 3d | Entra module | Kristof | ⬜ pending | — | — |
 | 4 | UX & information architecture | Kristof | ⬜ pending | — | — |
 | 5 | Security & GDPR | Kristof | ⬜ pending | — | — |
-| 6 | POC backlog | Kristof | ⬜ pending | — | — |
-| 7 | Management review | Management | ⬜ pending | — | — |
+| 6 | POC backlog (≤ 40 items; slice tasks marked) | Kristof | ⬜ pending | — | — |
+| 7 | Management review (vs kill criteria §20; go/no-go) | Management | ⬜ pending | — | — |
+| 8 | Build preparation (skeleton + sample data plan + dev handoff) | Kristof + dev | ⬜ pending | — | — |
+| 9 | Build acceptance (vs Definition of Done §19) + slice review | Kristof | ⬜ pending | — | — |
 
 ---
 

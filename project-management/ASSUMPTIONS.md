@@ -151,6 +151,33 @@ Why: Reduces sensitivity of sample data; sessions can be mocked at the path-dete
 Impact if wrong: Some session-based path categories cannot be demonstrated from data alone; mitigated by template-based path fabrication for demo.
 Linked: D-0011, `BLOODHOUND_ANALYZER_DESIGN.md`.
 
+### A-0016 — POC V1 can run on synthetic or anonymized data only
+Date: 2026-05-15
+Status: open
+Owner to validate: Kristof
+Assumption: For POC V1, the demo journey can be demonstrated using fully synthetic data (no real customer evidence) or anonymized sanitized exports. We do not require real customer data to land the management decision.
+Why: Removes GDPR / customer-confidentiality scope from POC; aligns with D-0011 (synthetic-only) and D-0015 (sample data plan).
+Impact if wrong: If management or ACEN sales insists the demo must run on a real customer dataset to be credible, we'd need DPO-approved anonymization and an explicit customer agreement — bounded extra work, but disruptive to the schedule. Q-0040 covers this.
+Linked: D-0011, D-0015, `WORKING_APPROACH.md` §13.
+
+### A-0017 — Live Graph and Silverfort API connectors are not required for POC V1
+Date: 2026-05-15
+Status: open
+Owner to validate: Kristof
+Assumption: POC V1 demonstrates the workflow on uploaded / mocked evidence only. No live Microsoft Graph collector, no live Silverfort API. These are designed for (interface, manifest, normalized shape) but not implemented in POC. MVP introduces a real-or-limited Graph collector (D-0012 / `WORKING_APPROACH.md` §5) and a Silverfort connector gated on validation (D-0006).
+Why: Eliminates connector implementation scope, secrets management, app-registration flow, customer onboarding flow, and rate-limit handling from POC V1. Aligns with the §10/§12 "mock in POC V1" list.
+Impact if wrong: If management expects a live data demo at Cycle 7, we either ship a tightly-scoped live read (bounded extra work) or re-frame the demo around uploaded evidence. Either is achievable; we choose at Session 1.
+Linked: D-0006, D-0012, `WORKING_APPROACH.md` §5, §12.
+
+### A-0018 — The first build is a thin vertical slice; module pages come after
+Date: 2026-05-15
+Status: open
+Owner to validate: Kristof + developer
+Assumption: Stage 9 begins with a vertical slice (AD + BloodHound minimal path → finding → publish → report preview). The other modules (Silverfort, Entra), additional controls, the full UI surface, and cross-module correlation are built only after the slice is reviewed and signed off.
+Why: Proves the lifecycle on real wiring before horizontal expansion; protects against half-built module dashboards (R-0002). Re-affirmed by D-0014 and codified in `TASKS.md` Stage 9 ordering.
+Impact if wrong: If a stakeholder pushes for parallel module dashboards before the slice is done, we'd reduce architectural confidence and risk demo-state fragility. Re-direct via §6 hard rule.
+Linked: D-0014, `WORKING_APPROACH.md` §6, `TASKS.md` Stage 9.
+
 ---
 
-*Last updated: 2026-05-15.*
+*Last updated: 2026-05-15 — A-0016, A-0017, A-0018 added for the 9-stage operating-model update.*

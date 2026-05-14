@@ -24,6 +24,58 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Operating model v2: 9 stages, demo story, vertical slice, sample data, kill criteria, doc control
+
+Stage: 0 (operating model)
+By: Claude Code (at Kristof's request)
+
+Changed:
+- `WORKING_APPROACH.md` — operating model upgraded from 8 to 9 stages. Highlights:
+  - Stage 8 split → Stage 8 (Build preparation) + Stage 9 (POC build). Build prep and build execution are now separate gates.
+  - New §3 — **POC V1 demo story** (north star). Every feature must support it.
+  - New §6 — **Thin vertical slice first**. Hard rule: no horizontal expansion until the slice is reviewed.
+  - New §13 — **Sample data requirements** with ownership split (Kristof = realism; Claude Code = safety/structure/docs).
+  - New §15 — **Documentation control rules** (≥ 400-line → executive summary; ~800-line soft cap → summary or appendix decision).
+  - New §20 — **POC V1 kill criteria** with explicit response options (reduce / adjust / postpone / stop).
+  - §5 MVP softened: "Real or limited Microsoft Graph collector for selected Entra checks, with license-aware status handling."
+  - §12 simplified data model wording: POC builds a coarse model proving the lifecycle (Customer / Engagement / AssessmentRun / Evidence / ControlResult / Finding / RemediationTask / ReportPreview / PublishState / AuditEvent). MVP/Full expand later.
+  - §14 complexity checklist extended (demo story, slice, sample data, prod-grade complexity, scrolling, consultant/customer effort, cross-module value, doc location).
+  - §18 Definition of Ready and §19 Definition of Done updated for the slice + sample data + kill criteria + Stage 8 gate.
+  - §22 Recommended next step rewritten.
+  - Executive summary added at the top per the new §15 rule.
+- `PROJECT_STATE.md` — stage map updated to 9 stages; next steps reordered to reflect Stage 8 / Stage 9 split.
+- `TASKS.md`:
+  - Stage 6 reframed as **backlog management** (T-6500..T-6503).
+  - Stage 7 expanded with kill-criteria walkthrough (T-7002).
+  - Stage 8 split into §8.1 Architecture skeleton, §8.2 Sample data plan (T-8001..T-8007), §8.3 Developer handoff (T-8010..T-8013).
+  - Stage 9 reorganized: §9.0 **Vertical slice (HARD GATE)** (T-9001..T-9012), §9.1 horizontal shared core, §9.2..§9.10 horizontal modules / UI / reporting / QA (renumbered from 6.x).
+  - Leftover "Stage 8 — Build preparation (MVP)" placeholder renamed "Post-Stage 9 — MVP preparation".
+- `REVIEW_NOTES.md` — sign-off tracker extended to Cycles 8 and 9 (Build preparation, Build acceptance).
+
+Decisions (in `DECISIONS.md`):
+- D-0012 Operating model split into 9 stages.
+- D-0013 POC V1 demo story is the north star.
+- D-0014 Thin vertical slice first; no horizontal expansion until proven.
+- D-0015 Sample data plan is a Stage 8 deliverable; ownership split.
+- D-0016 POC V1 kill criteria are explicit and feed the Cycle 7 management decision.
+- D-0017 Documentation control rules (size cap, executive summary, no duplication).
+
+Assumptions (in `ASSUMPTIONS.md`):
+- A-0016 POC V1 can run on synthetic or anonymized data only.
+- A-0017 Live Graph and Silverfort API connectors are not required for POC V1.
+- A-0018 The first build is a thin vertical slice; module pages come after.
+
+Risks (in `RISKS.md`):
+- R-0013 POC expands horizontally before the first slice is proven.
+- R-0014 Sample data is not realistic enough to land the demo.
+- R-0015 BloodHound findings are noisy without consultant tuning.
+- R-0016 Documentation grows too large to be reviewed actively.
+
+Open questions touched:
+- None new (existing questions remain valid; Q-0040 / Q-0090 / Q-0092 still apply).
+
+---
+
 ## 2026-05-15 — Folder layout: all docs into `project-management/`
 
 Stage: housekeeping

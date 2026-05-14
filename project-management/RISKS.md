@@ -151,6 +151,54 @@ Description: Long sessions reload the entire doc set and burn context, slowing p
 Mitigation: All durable state lives in files, not chat. Sessions are scoped per `WORKING_APPROACH.md` §12. Subagents for parallel writing of independent docs. End-of-session summaries instead of essays.
 Trigger: Conversation context filling beyond comfort within a single session.
 
+### R-0013 — POC expands horizontally before the first slice is proven
+Date: 2026-05-15
+Status: mitigating
+Category: scope / process
+Probability: high
+Impact: high
+Owner: Claude Code (Software Architect role) + Kristof
+Description: Under pressure to "show all four modules", Stage 9 starts building Silverfort and Entra surfaces in parallel with the AD + BloodHound slice. Result: four half-finished modules, no end-to-end flow, fragile demo, weak Cycle 7 management decision.
+Mitigation: D-0014 + `WORKING_APPROACH.md` §6 (hard rule: no horizontal expansion until slice is reviewed). `TASKS.md` Stage 9 tagged `slice` vs `horizontal`; horizontal tasks blocked on T-9012 (slice review). T-6501 explicitly marks each backlog item.
+Trigger: Any non-slice task starts before T-9012 completes; "let's just start the Entra page in parallel" pressure surfaces.
+Linked: D-0014, `WORKING_APPROACH.md` §6, `TASKS.md` Stage 9.
+
+### R-0014 — Sample data is not realistic enough to land the demo
+Date: 2026-05-15
+Status: open
+Category: data / process
+Probability: medium
+Impact: high
+Owner: Kristof (realism) + Claude Code (structure)
+Description: Synthetic sample datasets are too small, too clean, or too obviously fabricated. Management sees an unconvincing demo and the kill criterion *"the POC cannot be demonstrated without too many manual hacks"* triggers regardless of platform quality.
+Mitigation: D-0015 ownership split — Kristof validates realism, Claude Code ensures safety/structure/docs. T-8007 explicit sign-off task. Synthetic data is designed to include intentional cross-module overlap (CORR-BH-ENTRA-001 headline path). Demo dry-run with a fresh-eyes internal reviewer before Cycle 7.
+Trigger: Cycle 7 review feedback, or dry-run feedback, says the data looks fabricated.
+Linked: D-0015, A-0012, A-0016, `WORKING_APPROACH.md` §13.
+
+### R-0015 — BloodHound findings are noisy without consultant tuning
+Date: 2026-05-15
+Status: open
+Category: data / domain
+Probability: medium
+Impact: high
+Owner: BloodHound Analyzer role + Kristof
+Description: The deterministic analyzer enumerates many paths against a realistic synthetic graph. Without ranking discipline, the demo surfaces 50+ paths and the consultant cannot defend or prioritize them. This trips the kill criterion *"BloodHound findings are too noisy to be useful"* (`WORKING_APPROACH.md` §20).
+Mitigation: `BLOODHOUND_ANALYZER_DESIGN.md` caps (top K=3 per source, top N=50 considered, top 5 reported) + deterministic risk scoring + path categorization with first-match priority. Synthetic SharpHound ZIP shaped to ≥ 3 paths in ≥ 3 categories (avoiding "thousands of noise paths"). Consultant tuning of cap values is a Cycle 3 review item (REVIEW_NOTES.md item 7).
+Trigger: Demo dry-run shows > 10 paths reported, or consultant cannot pick a single headline path in < 30 seconds.
+Linked: `BLOODHOUND_ANALYZER_DESIGN.md`, `REVIEW_NOTES.md` items 5–8, `WORKING_APPROACH.md` §20 kill criterion.
+
+### R-0016 — Documentation grows too large to be reviewed actively
+Date: 2026-05-15
+Status: mitigating
+Category: process
+Probability: medium
+Impact: medium
+Owner: Claude Code (Documentation / Reviewer role)
+Description: The module design docs already approach or exceed ~800 lines (AD ~1055, BH ~1157, SF ~887, Entra ~830). Without active control, the docs become a second product to maintain; reviewers skip large sections; inconsistencies accumulate.
+Mitigation: D-0017 + `WORKING_APPROACH.md` §15. Soft ~800-line cap with executive summary trigger. Per-doc decision at Cycle 3 (summary / appendix split / accept). `WORKING_APPROACH.md` now opens with an executive summary as the example.
+Trigger: A new doc passes 800 lines without an executive summary; a reviewer says "I didn't read past section X".
+Linked: D-0017, `WORKING_APPROACH.md` §15, `REVIEW_NOTES.md`.
+
 ---
 
-*Last updated: 2026-05-15.*
+*Last updated: 2026-05-15 — R-0013 … R-0016 added for the 9-stage operating-model update.*
