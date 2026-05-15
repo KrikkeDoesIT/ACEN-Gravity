@@ -43,3 +43,10 @@ dist-css/
 evidence/
 evidence-uploads/
 *.zip.uploaded
+
+# Local development DB (SQLite per D-0024 — temporary backend)
+var/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal

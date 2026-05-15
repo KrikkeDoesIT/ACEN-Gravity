@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'findings' %}
+
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+
+{% set sev = severity_class.get(finding.severity, 'support-slate') %}
+{% set module_accent = {'ad':'brand-turquoise','bloodhound':'support-rose','silverfort':'support-violet','entra':'support-sky'}.get(finding.module_id, 'support-slate') %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    {# Breadcrumb #}
+    <div class="text-[12px] mb-4 flex items-center gap-2 text-white/55">
+      <a href="/findings" class="hover:text-white">Findings</a>
+      <span class="text-white/25">/</span>
+      <span class="text-white/40 truncate max-w-md">{{ finding.title }}</span>
+    </div>
+
+    {# Title + severity #}
+    <div class="mb-6 flex items-start justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-3 mb-3">
+          <span class="inline-flex items-center gap-2 px-2.5 py-1 bg-{{ sev }}/15 border border-{{ sev }}/40 rounded-xs">
+            <span class="w-1.5 h-1.5 bg-{{ sev }} rounded-xs"></span>
+            <span class="text-[11px] uppercase tracking-[0.16em] text-{{ sev }} font-bold">{{ finding.severity }}</span>
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface3/40 border border-white/10 rounded-xs">
+            <span class="w-1 h-1 bg-{{ module_accent }} rounded-xs"></span>
+            <span class="text-[11px] uppercase tracking-wide text-white/70">{{ finding.module_id }}</span>
+          </span>
+          <span class="text-[11px] px-2 py-1 bg-surface3/30 text-white/65 rounded-xs uppercase tracking-wide">{{ finding.state }}</span>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight">{{ finding.title }}</h1>
+      </div>
+      <div class="shrink-0 text-right">
+        <div class="text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold">Risk score</div>
+        <div class="text-4xl font-bold tabular-nums text-white">{{ finding.risk_score }}<span class="text-base text-white/40 font-medium"> / 100</span></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      {# Left: summary + technical detail + remediation #}
+      <div class="lg:col-span-2 space-y-4">
+        {% if persona.value == 'consultant' %}
+          <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
+            <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2">Summary — internal</div>
+            <div class="prose prose-invert prose-sm max-w-none text-white/85">
+              {{ finding.summary_internal }}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if finding.summary_customer %}
+        <div class="bg-surface1 border border-support-violet/30 rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-support-violet font-bold mb-2">Summary — customer framing</div>
+          <div class="prose prose-invert prose-sm max-w-none text-white/85">
+            {{ finding.summary_customer }}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if show_technical and finding.technical_detail %}
+        <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2">Technical detail</div>
+          <pre class="text-[12.5px] text-white/85 whitespace-pre-wrap font-mono leading-relaxed">{{ finding.technical_detail }}</pre>
+        </div>
+        {% endif %}
+
+        {# Path-step list — only for BloodHound findings #}
+        {% if finding.module_id == 'bloodhound' and finding.payload.get('steps') %}
+        <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold">Attack path · {{ finding.payload.get('length', 0) }} hop{{ '' if finding.payload.get('length', 0) == 1 else 's' }}</div>
+            {% if finding.payload.get('template_id') %}
+              <code class="text-[10px] text-white/35 font-mono">{{ finding.payload.get('template_id') }}</code>
+            {% endif %}
+          </div>
+          <ol class="space-y-2">
+            {% for step in finding.payload.get('steps', []) %}
+              {% set step_sev = (
+                  'support-rose' if step.severity_weight >= 8
+                  else 'support-amber' if step.severity_weight >= 6
+                  else 'support-sky' if step.severity_weight >= 3
+                  else 'support-slate'
+              ) %}
+              <li class="flex items-center gap-3 py-2 px-3 bg-surface2/50 border border-divider rounded-control">
+                <span class="inline-flex items-center justify-center w-7 h-7 bg-{{ step_sev }}/20 border border-{{ step_sev }}/40 rounded-control shrink-0">
+                  <span class="text-[11px] font-bold text-{{ step_sev }}">{{ loop.index }}</span>
+                </span>
+                <span class="font-mono text-[13px] text-white/90 truncate">{{ step.from_label }}</span>
+                <span class="text-[10px] uppercase tracking-wide text-white/40">{{ step.from_kind }}</span>
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-{{ step_sev }}/15 border border-{{ step_sev }}/40 rounded-xs">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-{{ step_sev }}"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                  <span class="text-[10px] uppercase tracking-wide text-{{ step_sev }} font-bold">{{ step.edge_type }}</span>
+                </span>
+                <span class="font-mono text-[13px] text-white/90 truncate">{{ step.to_label }}</span>
+                <span class="text-[10px] uppercase tracking-wide text-white/40">{{ step.to_kind }}</span>
+              </li>
+            {% endfor %}
+          </ol>
+        </div>
+        {% endif %}
+
+        {% if finding.remediation %}
+        <div class="bg-surface1 border border-brand-turquoise/30 rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-brand-turquoise font-bold mb-2">Remediation</div>
+          <pre class="text-[13px] text-white/85 whitespace-pre-wrap font-sans leading-relaxed">{{ finding.remediation }}</pre>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Right: meta sidebar #}
+      <div class="space-y-4">
+        <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-3">Properties</div>
+          <dl class="space-y-2.5 text-[13px]">
+            <div class="flex items-center justify-between"><dt class="text-white/55">Category</dt><dd class="font-mono text-white/85">{{ finding.category }}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-white/55">License status</dt><dd class="text-white/85">{{ finding.license_status }}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-white/55">State</dt><dd class="text-white/85">{{ finding.state }}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-white/55">Customer visibility</dt><dd class="text-white/85">{{ finding.customer_visibility }}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-white/55">Identity refs</dt><dd class="font-mono text-white/85 tabular-nums">{{ finding.identity_refs|length }}</dd></div>
+            <div class="flex items-center justify-between"><dt class="text-white/55">Created</dt><dd class="text-white/85">{{ finding.created_at.strftime('%Y-%m-%d %H:%M') }}</dd></div>
+          </dl>
+        </div>
+
+        {% if persona.value == 'consultant' %}
+        <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-3">Actions</div>
+          <div class="space-y-2">
+            <button class="w-full px-3 h-9 text-sm border border-divider text-white/70 hover:border-brand-turquoise/60 hover:text-brand-turquoise rounded-control transition flex items-center justify-between" disabled>
+              <span>Mark triaged</span><span class="text-[10px] text-white/35">Chunk B</span>
+            </button>
+            <button class="w-full px-3 h-9 text-sm border border-divider text-white/70 hover:border-support-violet/60 hover:text-support-violet rounded-control transition flex items-center justify-between" disabled>
+              <span>Set customer visibility</span><span class="text-[10px] text-white/35">Chunk B</span>
+            </button>
+            <button class="w-full px-3 h-9 text-sm bg-brand-turquoise/20 border border-brand-turquoise/40 text-brand-turquoise rounded-control transition flex items-center justify-between" disabled>
+              <span>Publish</span><span class="text-[10px] text-white/35">Chunk B</span>
+            </button>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="bg-surface2/30 border border-divider rounded-card p-4 text-[12px] text-white/55 leading-relaxed">
+          <div class="text-[11px] uppercase tracking-wide text-white/40 mb-1 font-bold">POC note</div>
+          Triage / publish / customer-visibility actions land in Chunk B (per the
+          phase-2 plan). Detection, ranking, and explanation are deterministic
+          (D-0005) — re-running <code class="text-white/70">gravity demo load</code>
+          produces the same output.
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+{% endblock %}

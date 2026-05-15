@@ -21,9 +21,7 @@ class Settings(BaseSettings):
     app_host: str = Field(default="127.0.0.1")
     app_port: int = Field(default=8000)
 
-    database_url: str = Field(
-        default="postgresql+psycopg://gravity:gravity@localhost:5432/gravity"
-    )
+    database_url: str = Field(default="sqlite:///./var/gravity.db")
 
     log_level: str = Field(default="INFO")
 

@@ -24,6 +24,92 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Stage 9 vertical slice — Chunk A (data → finding → UI, end-to-end)
+
+Stage: 9.0 (vertical slice — Chunk A of 3)
+By: Claude Code at Kristof's "let's start phase 2 now".
+
+This is the first real-business-logic milestone. The Contoso Corp synthetic
+fixture loads end-to-end through the platform: AD evidence → BloodHound graph
+→ deterministic path detection → template-based Finding generation → UI list
++ detail with role-aware customer-visibility enforcement.
+
+Added — persistence
+- `D-0024` logged: SQLite is the temporary persistence backend until WSL/podman/Postgres unblocks. Same SQLAlchemy 2.x + Alembic toolchain targets either engine; only `DATABASE_URL` changes. JSON columns use the portable `sqlalchemy.JSON` type.
+- `pyproject.toml` adds `networkx>=3.4`, `typer>=0.15`, and a `gravity` console-script entry point.
+- `alembic.ini` + `migrations/env.py` + `migrations/script.py.mako` — Alembic configuration that reads `DATABASE_URL` from the runtime settings and ensures the SQLite parent directory exists.
+- `migrations/versions/20260515_*_baseline_slice_schema.py` — baseline migration creating all 7 slice tables.
+- `.env.example` `DATABASE_URL` default flipped to `sqlite:///./var/gravity.db`; Postgres URL kept as a commented alternative.
+- `.gitignore` extended with `var/`, `*.db`, `*.db-journal`, etc.
+
+Added — slice models (`src/platform_core/`)
+- `db.py` — `Base`, lazy engine factory (creates SQLite parent dir), session factory, `get_db` FastAPI dep, `reset_for_tests` for isolated test DBs.
+- `models/mixins.py` — `UuidPk` (Python-generated 36-char string UUID PKs) + `Timestamps` mixin.
+- `models/core.py` — `Customer`, `Engagement`, `AssessmentRun` with FK + cascade relationships.
+- `identity/models.py` — `Identity` (canonical cross-module join key per `MODULE_ARCHITECTURE.md` §8) with SID / UPN / sAMAccountName / ObjectGUID / Azure ObjectId fields + `is_privileged`/`is_tier0`/`is_breakglass` flags.
+- `evidence/models.py` — `Evidence` (one parsed view per module per run, with JSON payload).
+- `findings/models.py` — `Finding` with the 8-value `LicenseStatus`, 5-value `Severity`, 5-value `FindingState`, 3-value `CustomerVisibility` StrEnums, identity_refs[], module payload[].
+- `audit/models.py` — `AuditEvent` (append-only).
+- `models/registry.py` — single import-once module to register every model on `Base.metadata` without circular imports. Imported by Alembic env + CLI + (later) app.
+
+Added — Contoso Corp synthetic fixture (`tests/fixtures/contoso/`)
+- `README.md` documenting the headline attack path: `contractor.john → MemberOf → Helpdesk → GenericAll → svc-backup → MemberOf → Domain Admins (Tier 0)`. Three edges, classic ACL abuse + service-account exposure + Tier 0 group membership.
+- `customer.json` (Contoso Corp metadata).
+- `ad/manifest.json` + `ad/privileged-groups.json` — AD toolkit-shaped evidence.
+- `sharphound/{domains,users,groups,computers}.json` — SharpHound CE format JSON (meta.version=6). 12 nodes, 6 edges, 3 well-known Tier 0 group RIDs.
+
+Added — modules (`src/modules/`)
+- `ad/parsers/privileged_groups.py` — reads the AD privileged-groups JSON; upserts `Identity` rows (idempotent on customer+SID); promotes `is_privileged`/`is_tier0` flags; never demotes.
+- `bloodhound/parsers/sharphound.py` — reads SharpHound CE JSON; builds a directed networkx graph (nodes per principal, edges per `MemberOf` + per `Aces`); identifies Tier 0 via well-known RIDs (512/518/519/516/...) + transitive group membership. Edge severity weights map per `BLOODHOUND_ANALYZER_DESIGN.md` §8.
+- `bloodhound/analyzer.py` — deterministic shortest-path detection (severity-weighted Dijkstra: high-severity edges → low distance → preferred). Caps: max length 8, top K=3 per source, top N=50 considered, top 5 reported. `_categorise` uses the first-match priority order from REVIEW_NOTES item 8. `_risk_score` per the formula in §13.
+- `bloodhound/findings.py` — template-based Finding generator with 5 category templates (`acl_abuse`, `group_nesting_priv_esc`, `delegation`, `dcsync`, `privilege_escalation`). Each template substitutes path data; the `template_id` is stored on the Finding so explanations are reproducible (D-0005). Severity bands per REVIEW_NOTES item 6.
+
+Added — CLI (`src/platform_core/cli.py`)
+- `gravity demo load` — idempotent fixture loader (Customer + Engagement upsert; new AssessmentRun per load). Runs the full pipeline: load metadata → AD parser → SharpHound parser → graph build → path detection → Finding generation → AuditEvent. Rich console output with the headline findings.
+
+Added — UI routes (`src/platform_core/web/routes/findings.py`)
+- `GET /findings` — list view with severity / module / risk / state / visibility columns. Consultant sees all; customer roles see only `customer_summary` / `customer_full` findings (server-side filter).
+- `GET /findings/{id}` — detail view with:
+  - Title + severity + module + state + risk_score header.
+  - Internal summary (consultant only).
+  - Customer-framed summary (all roles when visibility permits).
+  - Technical detail (consultant + `customer_full` only).
+  - **Path-step list** (BloodHound findings only) — each step shows source identity, edge type with severity-tinted badge, target identity. Reusable `PathStepList` pattern from `UI_DESIGN_DIRECTION.md` §13.
+  - Remediation block.
+  - Properties sidebar (category, license_status, state, customer_visibility, identity_refs count).
+  - Actions sidebar (Mark triaged / Set visibility / Publish — all stubbed for Chunk B).
+- Customer roles get a 404 (not 403, to avoid leaking the existence of internal-only findings) when hitting an `internal_only` finding's detail URL.
+
+Templates
+- `findings_list.html`, `finding_detail.html` — built from the existing component vocabulary (`Card`, `StatusBadge`, severity pills, module accent dots).
+- `components/side_nav.html` — Findings link now real (`href="/findings"`) with active-pill styling on `active_nav == 'findings'`.
+
+Verified
+- `pytest -q` → **18 passed** (9 existing smoke + 9 new slice tests):
+  - Pipeline: customer/engagement/run created; AD parser flags Tier 0 identities; svc-backup categorised as `service_account`.
+  - BloodHound: ACL-abuse path detected; severity ≥ High; risk_score ≥ 60; path payload contains a `GenericAll` step; target SID is a Tier 0 RID.
+  - Idempotency: re-running `demo load` creates only a new AssessmentRun, not duplicate customers/engagements.
+  - UI: `/findings` 200 for consultant (renders ACL abuse, severity badges); customer executive sees "No findings yet" because all defaults are `internal_only`; finding detail renders `GenericAll` edge in PathStepList; customer executive gets 404 on internal_only finding.
+- `ruff check src tests` → **All checks passed**. Per-file ignores added for typer's `Option()` default pattern; project-wide ignores for `RUF002/RUF003` (deliberate Unicode in human-readable docstrings).
+- `gravity demo load` (live run): 6 identities, 12-node graph, 6 Tier 0 principals, 5 critical paths, 5 findings — the headline `contractor.john → DOMAIN ADMINS` finding is HIGH severity.
+- HTTP probes: `POST /login` 303 → consultant `GET /findings` 200 → finding detail 200; customer executive `GET /findings` 200 (empty) + finding detail 404.
+
+Tasks moved
+- T-9001 (models), T-9003 (AD parser), T-9004 (BH parser), T-9005 (path detection), T-9006 (Finding gen) → done.
+- T-9013 (CLI), T-9014 (findings UI), T-9015 (tests) → done.
+- T-9009 (customer-visible view) → partial (filter is in; publish flow lands in Chunk B).
+- T-9011 (audit log) → partial (`demo.load` event captured; per-state-change events arrive in Chunk B).
+- T-9002 (upload endpoint), T-9007 (triage UI), T-9008 (publish), T-9010 (report preview), T-9012 (slice review) → still todo (Chunks B + C).
+
+Decisions
+- D-0024 SQLite as temporary persistence backend until Postgres unblocks.
+
+Recommended next step
+- Try it: <http://127.0.0.1:8001/findings> after `gravity demo load`. Headline finding "ACL abuse path from contractor.john reaches Tier 0 (DOMAIN ADMINS@CONTOSO.LOCAL)".
+- If happy: commit + push, then Chunk B (triage → publish → audit-log per state change).
+
+---
+
 ## 2026-05-15 — Real ACEN logo + user profile (header dropdown + /profile route)
 
 Stage: 8.1 (design iteration v5)

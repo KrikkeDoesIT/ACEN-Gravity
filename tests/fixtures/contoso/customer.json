@@ -1,0 +1,14 @@
+{
+  "customer": {
+    "name": "Contoso Corp",
+    "slug": "contoso",
+    "notes": "Synthetic demo customer for ACEN Gravity POC V1. Fictional org used for the vertical slice and the demo story. No real customer data."
+  },
+  "engagement": {
+    "name": "Q2 2026 Identity Security Review",
+    "slug": "q2-2026-identity-security-review"
+  },
+  "assessment_run": {
+    "name": "2026-05-15 Baseline"
+  }
+}

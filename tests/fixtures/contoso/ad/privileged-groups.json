@@ -1,0 +1,48 @@
+{
+  "schema": "ad-privileged-groups/v1",
+  "domain": "CONTOSO.LOCAL",
+  "domain_sid": "S-1-5-21-1234567890-1234567890-1234567890",
+  "groups": [
+    {
+      "name": "Domain Admins",
+      "sid": "S-1-5-21-1234567890-1234567890-1234567890-512",
+      "tier": 0,
+      "members": [
+        {
+          "kind": "user",
+          "sam_account_name": "it.admin.kristof",
+          "sid": "S-1-5-21-1234567890-1234567890-1234567890-1201",
+          "object_guid": "11111111-1111-1111-1111-000000001201",
+          "is_service_account": false
+        },
+        {
+          "kind": "user",
+          "sam_account_name": "svc-backup",
+          "sid": "S-1-5-21-1234567890-1234567890-1234567890-1202",
+          "object_guid": "11111111-1111-1111-1111-000000001202",
+          "is_service_account": true
+        }
+      ]
+    },
+    {
+      "name": "Enterprise Admins",
+      "sid": "S-1-5-21-1234567890-1234567890-1234567890-519",
+      "tier": 0,
+      "members": []
+    },
+    {
+      "name": "Domain Controllers",
+      "sid": "S-1-5-21-1234567890-1234567890-1234567890-516",
+      "tier": 0,
+      "members": [
+        {
+          "kind": "computer",
+          "sam_account_name": "DC01$",
+          "sid": "S-1-5-21-1234567890-1234567890-1234567890-1001",
+          "object_guid": "11111111-1111-1111-1111-000000001001",
+          "is_service_account": false
+        }
+      ]
+    }
+  ]
+}

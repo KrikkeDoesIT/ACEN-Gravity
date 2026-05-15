@@ -1,0 +1,14 @@
+{
+  "schema": "ad-toolkit-manifest/v1",
+  "toolkit_version": "0.1.0-synthetic",
+  "collected_at": "2026-05-15T09:14:22Z",
+  "operator": "kristof.laerenbergh@acen.example",
+  "customer_slug": "contoso",
+  "domain": "CONTOSO.LOCAL",
+  "domain_sid": "S-1-5-21-1234567890-1234567890-1234567890",
+  "collector_outputs": [
+    "privileged-groups.json"
+  ],
+  "checksums_file": "checksums.sha256",
+  "notes": "Synthetic POC dataset. Not a real engagement."
+}

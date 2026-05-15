@@ -31,7 +31,7 @@ Stage map (full detail in `WORKING_APPROACH.md` §4 — operating model upgraded
 | 6 | POC backlog | 🟡 skeleton in `TASKS.md`; refined after Cycles 1–5 (vertical-slice items must be marked) |
 | 7 | Management review (go/no-go on MVP) | ⬜ pending |
 | 8 | **Build preparation** (final backlog · skeleton · sample data plan · dev handoff · slice tasks ready) | 🟡 **8.1 done** (T-6001/2/4/5; T-6003 blocked on WSL); 8.2 + 8.3 pending |
-| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | ⬜ pending |
+| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | 🟡 **Chunk A done** — Contoso slice loads end-to-end (`gravity demo load`); `/findings` list + detail render in the browser; 5 BH attack-path findings generated deterministically. Chunks B (triage + publish) and C (correlation + report preview) pending. |
 
 ---
 

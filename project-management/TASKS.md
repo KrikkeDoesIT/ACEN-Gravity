@@ -123,18 +123,21 @@
 
 | ID | Tier | Owner | Status | Slice | Task |
 |---|---|---|---|---|---|
-| T-9001 | POC | DEV | todo | `slice` | Minimal SQLAlchemy models for the slice: Customer, Engagement, AssessmentRun, Evidence, ControlResult, Finding, RemediationTask, ReportPreview, PublishState, AuditEvent (simplified per `WORKING_APPROACH.md` §12) |
-| T-9002 | POC | DEV | todo | `slice` | Evidence upload endpoint + hardened ZIP/JSON validation (subset of T-6020) |
-| T-9003 | POC | DEV + AD | todo | `slice` | AD toolkit ZIP parser — minimum needed for the slice path's identities/SIDs |
-| T-9004 | POC | DEV + BH | todo | `slice` | SharpHound ZIP parser + networkx graph + Tier 0 identification (subset of T-6040–T-6041) |
-| T-9005 | POC | DEV + BH | todo | `slice` | Deterministic shortest-path detection for one critical attack path (subset of T-6042) |
-| T-9006 | POC | DEV + BH | todo | `slice` | Generate one Finding (with deterministic explanation template) from the path |
-| T-9007 | POC | DEV + UX | todo | `slice` | Finding detail drawer + Review action (`new` → `triaged`) |
-| T-9008 | POC | DEV + UX | todo | `slice` | Publish action with `customer_visibility` selector (default `internal_only` → set to `customer_summary`) |
-| T-9009 | POC | DEV + UX | todo | `slice` | Customer-visible view (role-switch to Customer Executive renders only published) |
-| T-9010 | POC | DEV + UX | todo | `slice` | Report preview HTML (one section, the published finding) |
-| T-9011 | POC | DEV | todo | `slice` | Audit log entries for upload, parse, finding-state, visibility change, publish, report |
-| T-9012 | POC | PO + QA | todo | `slice` | Slice review — demonstrate end-to-end on synthetic data; no horizontal expansion before sign-off |
+| T-9001 | POC | DEV | done    | `slice` | Minimal SQLAlchemy 2.x models: Customer, Engagement, AssessmentRun, Evidence, Identity, Finding, AuditEvent. Alembic baseline migration applied. SQLite for now (D-0024) |
+| T-9002 | POC | DEV | todo    | `slice` | Evidence upload endpoint + hardened ZIP/JSON validation (subset of T-6020). **Deferred to Chunk B** — fixtures load via CLI for now |
+| T-9003 | POC | DEV + AD | done    | `slice` | AD privileged-groups parser → Identity rows (Tier 0 flagging) |
+| T-9004 | POC | DEV + BH | done    | `slice` | SharpHound CE JSON parser → networkx DiGraph + transitive Tier 0 identification (well-known RIDs) |
+| T-9005 | POC | DEV + BH | done    | `slice` | Deterministic shortest-path detection (severity-weighted Dijkstra, top K per source, top N reported) |
+| T-9006 | POC | DEV + BH | done    | `slice` | Template-based Finding generator (per path category); deterministic explanations (D-0005) |
+| T-9007 | POC | DEV + UX | todo    | `slice` | Finding triage UI (`new` → `triaged`). **Chunk B.** |
+| T-9008 | POC | DEV + UX | todo    | `slice` | Publish action + `customer_visibility` selector. **Chunk B.** |
+| T-9009 | POC | DEV + UX | partial | `slice` | Customer-visible view — list + detail enforce visibility; publish flow lands in Chunk B |
+| T-9010 | POC | DEV + UX | todo    | `slice` | Report preview HTML. **Chunk C.** |
+| T-9011 | POC | DEV | partial | `slice` | Audit event for `demo.load`; per-finding-state-change + publish events arrive in Chunk B |
+| T-9012 | POC | PO + QA | todo    | `slice` | Slice review — demonstrate end-to-end on synthetic data; do **not** expand horizontally before sign-off |
+| T-9013 | POC | DEV | done    | `slice` | `gravity demo load` CLI (idempotent on customer/engagement; new run + findings per load) |
+| T-9014 | POC | DEV + UX | done    | `slice` | `/findings` list + `/findings/{id}` detail with `PathStepList`; visibility gate enforced server-side |
+| T-9015 | POC | QA | done    | `slice` | 9 integration tests (pipeline + UI) + 9 existing smoke tests = **18/18 pass**, lint clean |
 
 ### 9.1 Horizontal expansion — shared core (after slice) — `horizontal`
 

@@ -1,0 +1,85 @@
+{
+  "data": [
+    {
+      "Properties": {
+        "name": "HELPDESK@CONTOSO.LOCAL",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1301",
+        "highvalue": false,
+        "description": "Helpdesk team"
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1301",
+      "Members": [
+        {
+          "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1103",
+          "ObjectType": "User"
+        },
+        {
+          "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1101",
+          "ObjectType": "User"
+        }
+      ],
+      "Aces": []
+    },
+    {
+      "Properties": {
+        "name": "DOMAIN ADMINS@CONTOSO.LOCAL",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-512",
+        "highvalue": true,
+        "admincount": true,
+        "description": "Designated administrators of the domain"
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-512",
+      "Members": [
+        {
+          "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1201",
+          "ObjectType": "User"
+        },
+        {
+          "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1202",
+          "ObjectType": "User"
+        }
+      ],
+      "Aces": []
+    },
+    {
+      "Properties": {
+        "name": "ENTERPRISE ADMINS@CONTOSO.LOCAL",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-519",
+        "highvalue": true,
+        "admincount": true
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-519",
+      "Members": [],
+      "Aces": []
+    },
+    {
+      "Properties": {
+        "name": "DOMAIN CONTROLLERS@CONTOSO.LOCAL",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-516",
+        "highvalue": true
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-516",
+      "Members": [
+        {
+          "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1001",
+          "ObjectType": "Computer"
+        }
+      ],
+      "Aces": []
+    }
+  ],
+  "meta": {
+    "methods": 0,
+    "type": "groups",
+    "count": 4,
+    "version": 6
+  }
+}

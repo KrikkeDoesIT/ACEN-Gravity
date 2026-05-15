@@ -1,0 +1,109 @@
+{
+  "data": [
+    {
+      "Properties": {
+        "name": "CONTRACTOR.JOHN@CONTOSO.LOCAL",
+        "samaccountname": "contractor.john",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1101",
+        "highvalue": false,
+        "enabled": true,
+        "description": "External contractor"
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1101",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-513",
+      "Aces": [],
+      "AllowedToDelegate": [],
+      "HasSIDHistory": [],
+      "SPNTargets": []
+    },
+    {
+      "Properties": {
+        "name": "REGULAR.USER.ALICE@CONTOSO.LOCAL",
+        "samaccountname": "regular.user.alice",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1102",
+        "highvalue": false,
+        "enabled": true
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1102",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-513",
+      "Aces": [],
+      "AllowedToDelegate": [],
+      "HasSIDHistory": [],
+      "SPNTargets": []
+    },
+    {
+      "Properties": {
+        "name": "HELPDESK.BOB@CONTOSO.LOCAL",
+        "samaccountname": "helpdesk.bob",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1103",
+        "highvalue": false,
+        "enabled": true,
+        "description": "Helpdesk technician"
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1103",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-513",
+      "Aces": [],
+      "AllowedToDelegate": [],
+      "HasSIDHistory": [],
+      "SPNTargets": []
+    },
+    {
+      "Properties": {
+        "name": "IT.ADMIN.KRISTOF@CONTOSO.LOCAL",
+        "samaccountname": "it.admin.kristof",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1201",
+        "highvalue": true,
+        "enabled": true,
+        "admincount": true,
+        "description": "Domain administrator"
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1201",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-513",
+      "Aces": [],
+      "AllowedToDelegate": [],
+      "HasSIDHistory": [],
+      "SPNTargets": []
+    },
+    {
+      "Properties": {
+        "name": "SVC-BACKUP@CONTOSO.LOCAL",
+        "samaccountname": "svc-backup",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1202",
+        "highvalue": true,
+        "enabled": true,
+        "admincount": true,
+        "serviceprincipalnames": ["MSSQLSvc/backup.contoso.local:1433"],
+        "description": "Service account for nightly backup job"
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1202",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-513",
+      "Aces": [
+        {
+          "PrincipalSID": "S-1-5-21-1234567890-1234567890-1234567890-1301",
+          "PrincipalType": "Group",
+          "RightName": "GenericAll",
+          "IsInherited": false
+        }
+      ],
+      "AllowedToDelegate": [],
+      "HasSIDHistory": [],
+      "SPNTargets": []
+    }
+  ],
+  "meta": {
+    "methods": 0,
+    "type": "users",
+    "count": 5,
+    "version": 6
+  }
+}

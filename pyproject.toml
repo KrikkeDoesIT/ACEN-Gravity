@@ -22,7 +22,12 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
+    "networkx>=3.4",
+    "typer>=0.15",
 ]
+
+[project.scripts]
+gravity = "platform_core.cli:app"
 
 [project.optional-dependencies]
 dev = [
@@ -43,11 +48,16 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ARG", "SIM", "RUF"]
-ignore = ["E501"]
+# E501 — line length is handled by the formatter, not the linter.
+# RUF002/RUF003 — we deliberately use human-typography unicode (en dash, × etc.)
+# in docstrings and comments; the chars don't appear in identifiers.
+ignore = ["E501", "RUF002", "RUF003"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ARG"]
 "src/**/manifest.py" = ["ARG"]
+# B008 — typer requires `typer.Option(...)` as the default value of CLI args.
+"src/platform_core/cli.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"

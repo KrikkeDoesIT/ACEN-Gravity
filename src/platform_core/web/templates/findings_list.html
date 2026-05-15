@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'findings' %}
+
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    {# Page header #}
+    <div class="mb-6 flex items-start justify-between gap-6">
+      <div>
+        <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2 flex items-center gap-2">
+          <span>Findings</span>
+          {% if customer %}<span class="text-white/30">·</span><span class="text-white/55">{{ customer.name }}</span>{% endif %}
+          {% if run %}<span class="text-white/30">·</span><span class="text-white/55">{{ run.name }}</span>{% endif %}
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight">{{ findings|length }} finding{{ '' if findings|length == 1 else 's' }}</h1>
+        <p class="text-white/55 mt-1 max-w-2xl">
+          {% if persona.value == 'consultant' %}
+            All findings across modules. Click a row to see details, identity refs, and remediation guidance.
+          {% else %}
+            Findings published for this engagement.
+          {% endif %}
+        </p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <button class="px-3 h-9 text-sm border border-divider text-white/70 hover:border-brand-turquoise/60 hover:text-brand-turquoise rounded-control transition flex items-center gap-2" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+          Filter
+        </button>
+      </div>
+    </div>
+
+    {# Findings list #}
+    {% if findings %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+      <div class="grid grid-cols-12 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold border-b border-divider">
+        <div class="col-span-1">Severity</div>
+        <div class="col-span-6">Finding</div>
+        <div class="col-span-2">Module</div>
+        <div class="col-span-1 text-right">Risk</div>
+        <div class="col-span-1">State</div>
+        <div class="col-span-1 text-right">Visibility</div>
+      </div>
+      <ul class="divide-y divide-divider">
+        {% for f in findings %}
+          {% set sev = severity_class.get(f.severity, 'support-slate') %}
+          <li>
+            <a href="/findings/{{ f.id }}" class="grid grid-cols-12 px-5 py-3.5 text-sm hover:bg-surface2/40 transition items-center">
+              <div class="col-span-1">
+                <span class="inline-flex items-center gap-2">
+                  <span class="w-2 h-2 bg-{{ sev }} rounded-xs"></span>
+                  <span class="text-[11px] uppercase tracking-wide text-{{ sev }} font-bold">{{ f.severity }}</span>
+                </span>
+              </div>
+              <div class="col-span-6">
+                <div class="text-white font-medium truncate">{{ f.title }}</div>
+                <div class="text-[12px] text-white/45 truncate">{{ f.category }}</div>
+              </div>
+              <div class="col-span-2">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-wide bg-surface3/40 border border-white/10 rounded-xs text-white/70">
+                  {% set module_accent = {'ad':'brand-turquoise','bloodhound':'support-rose','silverfort':'support-violet','entra':'support-sky'}.get(f.module_id, 'support-slate') %}
+                  <span class="w-1 h-1 bg-{{ module_accent }} rounded-xs"></span>
+                  {{ f.module_id }}
+                </span>
+              </div>
+              <div class="col-span-1 text-right tabular-nums font-semibold text-white">{{ f.risk_score }}</div>
+              <div class="col-span-1">
+                <span class="text-[11px] px-1.5 py-0.5 bg-surface3/30 text-white/65 rounded-xs uppercase tracking-wide">{{ f.state }}</span>
+              </div>
+              <div class="col-span-1 text-right">
+                {% if f.customer_visibility == 'internal_only' %}
+                  <span class="text-[10px] px-1.5 py-0.5 bg-support-slate/20 text-white/60 rounded-xs uppercase tracking-wide">Internal</span>
+                {% elif f.customer_visibility == 'customer_summary' %}
+                  <span class="text-[10px] px-1.5 py-0.5 bg-support-violet/20 text-support-violet rounded-xs uppercase tracking-wide">Summary</span>
+                {% else %}
+                  <span class="text-[10px] px-1.5 py-0.5 bg-brand-turquoise/20 text-brand-turquoise rounded-xs uppercase tracking-wide">Full</span>
+                {% endif %}
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card p-10 text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 bg-surface3/60 rounded-card mb-4">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-white/45"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+      </div>
+      <h2 class="text-lg font-semibold">No findings yet</h2>
+      <p class="text-white/55 mt-1 text-sm">
+        {% if persona.value == 'consultant' %}
+          Run <code class="text-brand-turquoise bg-surface2 px-1.5 py-0.5 rounded-xs">gravity demo load</code> to load the Contoso Corp fixture.
+        {% else %}
+          Nothing has been published for this engagement yet.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}

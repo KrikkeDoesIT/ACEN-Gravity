@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from platform_core.settings import get_settings
-from platform_core.web.routes import home, login, profile
+from platform_core.web.routes import findings, home, login, profile
 
 
 def create_app() -> FastAPI:
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(login.router)
     app.include_router(home.router)
     app.include_router(profile.router)
+    app.include_router(findings.router)
 
     @app.get("/healthz", include_in_schema=False)
     def healthz() -> dict[str, str]:

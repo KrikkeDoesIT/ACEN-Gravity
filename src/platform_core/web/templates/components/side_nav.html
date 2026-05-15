@@ -41,12 +41,12 @@
       <ul class="space-y-1">
         {% if is_nav_visible(persona, 'findings') %}
         <li>
-          <a href="#" class="flex items-center justify-between gap-3 px-3 py-2 rounded-control text-white/65 border border-transparent hover:bg-surface2/50 hover:text-white transition">
+          <a href="/findings" class="flex items-center justify-between gap-3 px-3 py-2 rounded-control transition
+             {{ 'bg-brand-turquoise/15 text-white border border-brand-turquoise/40 shadow-card' if active_nav == 'findings' else 'text-white/65 border border-transparent hover:bg-surface2/50 hover:text-white' }}">
             <span class="flex items-center gap-3">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="{{ 'text-brand-turquoise' if active_nav == 'findings' else '' }}"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
               <span>Findings</span>
             </span>
-            <span class="text-[10px] px-1.5 py-0.5 bg-support-slate/30 text-white/65 rounded-xs tabular-nums">0</span>
           </a>
         </li>
         {% endif %}

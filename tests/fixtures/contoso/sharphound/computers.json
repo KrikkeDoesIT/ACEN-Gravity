@@ -1,0 +1,50 @@
+{
+  "data": [
+    {
+      "Properties": {
+        "name": "DC01.CONTOSO.LOCAL",
+        "samaccountname": "DC01$",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1001",
+        "highvalue": true,
+        "enabled": true,
+        "operatingsystem": "Windows Server 2022 Standard",
+        "unconstraineddelegation": false
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1001",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-516",
+      "Aces": [],
+      "AllowedToDelegate": [],
+      "Sessions": { "Results": [], "Collected": false, "FailureReason": null },
+      "LocalGroups": [],
+      "UserRights": []
+    },
+    {
+      "Properties": {
+        "name": "WORKSTATION01.CONTOSO.LOCAL",
+        "samaccountname": "WORKSTATION01$",
+        "domain": "CONTOSO.LOCAL",
+        "domainsid": "S-1-5-21-1234567890-1234567890-1234567890",
+        "objectid": "S-1-5-21-1234567890-1234567890-1234567890-1002",
+        "highvalue": false,
+        "enabled": true,
+        "operatingsystem": "Windows 11 Enterprise",
+        "unconstraineddelegation": false
+      },
+      "ObjectIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1002",
+      "PrimaryGroupSID": "S-1-5-21-1234567890-1234567890-1234567890-515",
+      "Aces": [],
+      "AllowedToDelegate": [],
+      "Sessions": { "Results": [], "Collected": false, "FailureReason": null },
+      "LocalGroups": [],
+      "UserRights": []
+    }
+  ],
+  "meta": {
+    "methods": 0,
+    "type": "computers",
+    "count": 2,
+    "version": 6
+  }
+}
