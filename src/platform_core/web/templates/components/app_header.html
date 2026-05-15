@@ -10,16 +10,33 @@
       </span>
     </a>
 
-    {# Customer / engagement / run pickers — placeholders until Stage 9 #}
-    <div class="hidden md:flex items-center gap-1 text-sm text-white/55 ml-4">
-      <button class="px-2.5 py-1 hover:text-white rounded-control flex items-center gap-1.5 border border-transparent hover:border-divider transition" disabled>
-        <span class="inline-block w-1.5 h-1.5 bg-support-slate"></span>
-        <span>No customer</span>
-      </button>
+    {# Customer / engagement / run context strip — POC reads the latest of each
+       from the DB. MVP replaces this with real pickers (Q-Stage8). #}
+    {% set ctx = current_context() %}
+    <div class="hidden md:flex items-center gap-1 text-sm text-white/65 ml-4">
+      {% if ctx.customer %}
+        <span class="px-2.5 py-1 rounded-control flex items-center gap-1.5 border border-divider bg-surface2/40">
+          <span class="inline-block w-1.5 h-1.5 bg-statusOk rounded-xs"></span>
+          <span class="text-white font-semibold">{{ ctx.customer.name }}</span>
+        </span>
+      {% else %}
+        <span class="px-2.5 py-1 rounded-control flex items-center gap-1.5 border border-transparent text-white/45">
+          <span class="inline-block w-1.5 h-1.5 bg-support-slate rounded-xs"></span>
+          <span>No customer</span>
+        </span>
+      {% endif %}
       <span class="opacity-30">/</span>
-      <button class="px-2.5 py-1 hover:text-white rounded-control border border-transparent hover:border-divider transition" disabled>No engagement</button>
+      {% if ctx.engagement %}
+        <span class="px-2.5 py-1 rounded-control border border-divider bg-surface2/40 text-white/85">{{ ctx.engagement.name }}</span>
+      {% else %}
+        <span class="px-2.5 py-1 rounded-control border border-transparent text-white/45">No engagement</span>
+      {% endif %}
       <span class="opacity-30">/</span>
-      <button class="px-2.5 py-1 hover:text-white rounded-control border border-transparent hover:border-divider transition" disabled>No run</button>
+      {% if ctx.run %}
+        <span class="px-2.5 py-1 rounded-control border border-divider bg-surface2/40 text-white/85">{{ ctx.run.name }}</span>
+      {% else %}
+        <span class="px-2.5 py-1 rounded-control border border-transparent text-white/45">No run</span>
+      {% endif %}
     </div>
 
     <div class="grow"></div>
