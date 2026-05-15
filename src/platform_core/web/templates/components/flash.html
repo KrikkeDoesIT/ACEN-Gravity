@@ -1,0 +1,12 @@
+{% if flash %}
+{% set tone = {
+  'ok':    {'bg': 'bg-statusOk/12',       'border': 'border-statusOk/40',       'text': 'text-statusOk',       'dot': 'bg-statusOk'},
+  'error': {'bg': 'bg-statusCritical/12', 'border': 'border-statusCritical/40', 'text': 'text-statusCritical', 'dot': 'bg-statusCritical'},
+  'warn':  {'bg': 'bg-support-amber/12',  'border': 'border-support-amber/40',  'text': 'text-support-amber',  'dot': 'bg-support-amber'},
+  'info':  {'bg': 'bg-support-indigo/12', 'border': 'border-support-indigo/40', 'text': 'text-support-indigo', 'dot': 'bg-support-indigo'},
+}.get(flash.kind, {'bg':'bg-surface2','border':'border-divider','text':'text-white/85','dot':'bg-support-slate'}) %}
+<div class="mb-5 {{ tone.bg }} border {{ tone.border }} rounded-control px-4 py-3 flex items-start gap-3">
+  <span class="w-2 h-2 mt-1.5 rounded-xs {{ tone.dot }} shrink-0"></span>
+  <div class="text-[13px] {{ tone.text }} flex-1">{{ flash.message }}</div>
+</div>
+{% endif %}

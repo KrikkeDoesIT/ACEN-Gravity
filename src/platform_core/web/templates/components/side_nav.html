@@ -60,8 +60,9 @@
         {% endif %}
         {% if is_nav_visible(persona, 'audit') %}
         <li>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-control text-white/65 border border-transparent hover:bg-surface2/50 hover:text-white transition">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <a href="/audit" class="flex items-center gap-3 px-3 py-2 rounded-control transition
+             {{ 'bg-brand-turquoise/15 text-white border border-brand-turquoise/40 shadow-card' if active_nav == 'audit' else 'text-white/65 border border-transparent hover:bg-surface2/50 hover:text-white' }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="{{ 'text-brand-turquoise' if active_nav == 'audit' else '' }}"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             <span>Audit</span>
           </a>
         </li>

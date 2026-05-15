@@ -24,6 +24,68 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Stage 9 vertical slice — Chunk B (triage → publish → audit per state change)
+
+Stage: 9.0 (vertical slice — Chunk B of 3)
+By: Claude Code.
+
+The slice now has the full **finding lifecycle**: a consultant triages a
+finding, sets customer visibility, publishes (one-click composite action),
+and the customer executive immediately sees the published version. Every
+state change, visibility change, and publish event is recorded in the audit
+log at `/audit`.
+
+Added — workflow module
+- `src/platform_core/findings/workflow.py`:
+  - `ALLOWED_TRANSITIONS` — explicit state machine: `new ↔ triaged ↔ published ↔ retest_requested ↔ closed` with rollback edges. Invalid transitions raise a typed `TransitionError`.
+  - `transition_state` — moves a Finding to a target state; writes a `finding.state_change` AuditEvent (severity = notable).
+  - `set_visibility` — changes `customer_visibility`; writes a `finding.visibility_change` AuditEvent (severity = security).
+  - `publish_finding` — composite action: sets visibility (must be `customer_summary` or `customer_full`), transitions state to `published`, and writes a composite `finding.publish` audit event. Auto-triages findings that are still `new`.
+  - All functions are session-pure (do not commit) and authority-agnostic — route layer enforces "consultant only".
+
+Added — routes (`src/platform_core/web/routes/findings.py`)
+- `POST /findings/{id}/state` — consultant transitions a finding state via form; flash message on success/error.
+- `POST /findings/{id}/visibility` — consultant sets `customer_visibility`.
+- `POST /findings/{id}/publish` — composite publish (visibility + state) in one step.
+- `GET /audit` — consultant-only view; lists the 200 most recent audit events with actor, event type, severity, target, payload summary.
+- `_ensure_consultant` helper raises 403 for non-consultant roles on every mutation route.
+- Flash messages via signed session cookie (`_FLASH_KEY`).
+
+Added — templates
+- `components/flash.html` — colour-coded banner partial (ok / error / warn / info).
+- `audit_log.html` — table view with severity-coloured pills + payload pretty-print per known event type (`state_change` / `visibility_change` / `publish` / generic).
+- `finding_detail.html` — actions sidebar now wired:
+  - **State** card: shows current state + form buttons for every allowed transition (auto-filtered by the state machine).
+  - **Customer visibility** card: three buttons (internal_only / customer_summary / customer_full); the current one is disabled.
+  - **Publish to customer** card: two one-click buttons (executive summary / full technical detail) that compose visibility + state in one action. After publish, the card flips to a "Published" confirmation with an "Unpublish" rollback.
+- `findings_list.html` + `audit_log.html`: flash banner rendered at the top.
+- `components/side_nav.html`: `/audit` link real and active-pill aware.
+
+Verified
+- `pytest -q` → **27 passed** (9 smoke + 9 Chunk A pipeline/UI + 9 Chunk B):
+  - State machine walks new → triaged → published → closed; invalid `new → published` is rejected with flash, state unchanged.
+  - Customer executive forbidden (403) from any mutation endpoint.
+  - Visibility change creates a `finding.visibility_change` audit event with `from`/`to` payload at severity=`security`.
+  - Invalid visibility value rejected with flash.
+  - One-click publish from `state=new` auto-triages → publishes → sets visibility → writes 2 state-change events + 1 visibility-change event + 1 composite `finding.publish` event.
+  - Publishing with `internal_only` is blocked (returns flash "Publishing requires customer_summary or customer_full").
+  - After publish, the customer executive sees the finding in the list and on the detail page; "Summary — internal" block does NOT render for customer roles; "Summary — customer framing" does.
+  - Audit log view returns 200 for consultant, 403 for customer executive.
+- `ruff check src tests` → clean.
+- Live HTTP probe: consultant `POST /findings/{id}/publish` 303 → `GET /audit` 200 → customer-executive `GET /findings` 200 (now shows ACL abuse) → customer-executive `GET /findings/{id}` 200.
+
+Tasks moved
+- T-9007 (triage), T-9008 (publish), T-9009 (customer-visible view), T-9011 (audit log per change) → done.
+
+Decisions
+- (no new D-NNNN)
+
+Recommended next step
+- Try it: log in as consultant, open a finding, click "Publish — executive summary". Switch to Customer Executive via the header dropdown. The finding is now visible. Check `/audit` to see the full trail.
+- Chunk C next: Silverfort coverage stub + cross-module correlation finding ("Tier 0 service account lacks Silverfort coverage") + HTML report preview. That closes Stage 9 vertical-slice scope and trips T-9012 (slice review).
+
+---
+
 ## 2026-05-15 — Stage 9 vertical slice — Chunk A (data → finding → UI, end-to-end)
 
 Stage: 9.0 (vertical slice — Chunk A of 3)

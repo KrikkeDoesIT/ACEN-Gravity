@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'audit' %}
+
+{% set sev_class = {
+  'info':     'support-slate',
+  'notable':  'support-amber',
+  'security': 'support-rose',
+} %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    <div class="mb-6">
+      <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2">Audit log</div>
+      <h1 class="text-3xl font-bold tracking-tight">{{ events|length }} event{{ '' if events|length == 1 else 's' }}</h1>
+      <p class="text-white/55 mt-1 max-w-2xl">
+        Append-only record of consequential actions (uploads, parses, finding state changes, visibility changes, publish events).
+        Showing the most recent 200.
+      </p>
+    </div>
+
+    {% include "components/flash.html" %}
+
+    {% if events %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+      <div class="grid grid-cols-12 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold border-b border-divider">
+        <div class="col-span-2">When</div>
+        <div class="col-span-2">Actor</div>
+        <div class="col-span-2">Event</div>
+        <div class="col-span-1">Severity</div>
+        <div class="col-span-2">Target</div>
+        <div class="col-span-3">Detail</div>
+      </div>
+      <ul class="divide-y divide-divider">
+        {% for e in events %}
+          {% set tone = sev_class.get(e.severity, 'support-slate') %}
+          <li class="grid grid-cols-12 px-5 py-3 text-[13px] items-center hover:bg-surface2/40 transition">
+            <div class="col-span-2 text-white/65 tabular-nums font-mono text-[12px]">{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            <div class="col-span-2">
+              <div class="text-white/85 truncate">{{ e.actor_label }}</div>
+              <div class="text-[10px] uppercase tracking-wide text-white/40">{{ e.actor_role }}</div>
+            </div>
+            <div class="col-span-2">
+              <code class="text-[12px] text-white/85">{{ e.event_type }}</code>
+            </div>
+            <div class="col-span-1">
+              <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-{{ tone }}/15 border border-{{ tone }}/30 rounded-xs">
+                <span class="w-1 h-1 bg-{{ tone }} rounded-xs"></span>
+                <span class="text-[10px] uppercase tracking-wide text-{{ tone }} font-bold">{{ e.severity }}</span>
+              </span>
+            </div>
+            <div class="col-span-2">
+              <div class="text-white/75 truncate">{{ e.target_kind }}</div>
+              <code class="text-[10px] text-white/40 font-mono truncate block">{{ e.target_id[:8] }}…</code>
+            </div>
+            <div class="col-span-3 text-white/65 truncate text-[12px]">
+              {% if e.payload %}
+                {% if e.event_type == 'finding.state_change' %}
+                  <span class="text-white/45">{{ e.payload.get('from') }}</span> → <span class="text-white/85">{{ e.payload.get('to') }}</span>
+                  <span class="text-white/40 ml-2">{{ e.payload.get('title', '') }}</span>
+                {% elif e.event_type == 'finding.visibility_change' %}
+                  <span class="text-white/45">{{ e.payload.get('from') }}</span> → <span class="text-support-violet">{{ e.payload.get('to') }}</span>
+                {% elif e.event_type == 'finding.publish' %}
+                  visibility=<span class="text-brand-turquoise">{{ e.payload.get('visibility') }}</span>
+                {% else %}
+                  <code class="text-[11px] text-white/45 truncate inline-block max-w-full">{{ e.payload | tojson }}</code>
+                {% endif %}
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card p-10 text-center">
+      <h2 class="text-lg font-semibold">No audit events yet</h2>
+      <p class="text-white/55 mt-1 text-sm">
+        Run <code class="text-brand-turquoise bg-surface2 px-1.5 py-0.5 rounded-xs">gravity demo load</code> or perform any action to see entries here.
+      </p>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}

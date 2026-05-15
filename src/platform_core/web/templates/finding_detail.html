@@ -26,6 +26,8 @@
       <span class="text-white/40 truncate max-w-md">{{ finding.title }}</span>
     </div>
 
+    {% include "components/flash.html" %}
+
     {# Title + severity #}
     <div class="mb-6 flex items-start justify-between gap-6">
       <div>
@@ -135,20 +137,116 @@
         </div>
 
         {% if persona.value == 'consultant' %}
+        {% set state_labels = {
+          'new': 'Mark new',
+          'triaged': 'Mark triaged',
+          'published': 'Publish',
+          'retest_requested': 'Request retest',
+          'closed': 'Close finding',
+        } %}
+        {% set state_accent = {
+          'new': 'support-slate',
+          'triaged': 'brand-turquoise',
+          'published': 'brand-turquoise',
+          'retest_requested': 'support-amber',
+          'closed': 'support-slate',
+        } %}
+
+        {# State transitions #}
         <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
-          <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-3">Actions</div>
-          <div class="space-y-2">
-            <button class="w-full px-3 h-9 text-sm border border-divider text-white/70 hover:border-brand-turquoise/60 hover:text-brand-turquoise rounded-control transition flex items-center justify-between" disabled>
-              <span>Mark triaged</span><span class="text-[10px] text-white/35">Chunk B</span>
-            </button>
-            <button class="w-full px-3 h-9 text-sm border border-divider text-white/70 hover:border-support-violet/60 hover:text-support-violet rounded-control transition flex items-center justify-between" disabled>
-              <span>Set customer visibility</span><span class="text-[10px] text-white/35">Chunk B</span>
-            </button>
-            <button class="w-full px-3 h-9 text-sm bg-brand-turquoise/20 border border-brand-turquoise/40 text-brand-turquoise rounded-control transition flex items-center justify-between" disabled>
-              <span>Publish</span><span class="text-[10px] text-white/35">Chunk B</span>
-            </button>
+          <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-3">State</div>
+          <div class="mb-3 flex items-center gap-2 text-[12px]">
+            <span class="text-white/55">Current:</span>
+            <span class="px-1.5 py-0.5 bg-surface2 border border-divider rounded-xs text-white uppercase tracking-wide text-[10px]">{{ finding.state }}</span>
           </div>
+          {% if allowed_states %}
+          <div class="space-y-1.5">
+            {% for s in allowed_states %}
+              {% set accent = state_accent.get(s, 'support-slate') %}
+              <form action="/findings/{{ finding.id }}/state" method="post">
+                <input type="hidden" name="new_state" value="{{ s }}"/>
+                <button type="submit"
+                        class="w-full px-3 h-9 text-sm border border-divider text-white/75 hover:bg-{{ accent }}/10 hover:border-{{ accent }}/50 hover:text-{{ accent }} rounded-control transition flex items-center justify-between gap-2">
+                  <span>{{ state_labels.get(s, s) }}</span>
+                  <span class="text-[10px] uppercase tracking-wide text-white/40">{{ s }}</span>
+                </button>
+              </form>
+            {% endfor %}
+          </div>
+          {% else %}
+            <div class="text-[12px] text-white/45">No further state transitions available from <code>{{ finding.state }}</code>.</div>
+          {% endif %}
         </div>
+
+        {# Customer visibility #}
+        <div class="bg-surface1 border border-divider rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-3">Customer visibility</div>
+          <div class="mb-3 flex items-center gap-2 text-[12px]">
+            <span class="text-white/55">Current:</span>
+            {% if finding.customer_visibility == 'internal_only' %}
+              <span class="px-1.5 py-0.5 bg-support-slate/25 text-white/70 rounded-xs uppercase tracking-wide text-[10px]">Internal only</span>
+            {% elif finding.customer_visibility == 'customer_summary' %}
+              <span class="px-1.5 py-0.5 bg-support-violet/20 text-support-violet rounded-xs uppercase tracking-wide text-[10px]">Customer summary</span>
+            {% else %}
+              <span class="px-1.5 py-0.5 bg-brand-turquoise/20 text-brand-turquoise rounded-xs uppercase tracking-wide text-[10px]">Customer full</span>
+            {% endif %}
+          </div>
+          <form action="/findings/{{ finding.id }}/visibility" method="post" class="space-y-1.5">
+            {% for v, label, accent in [
+              ('internal_only', 'Internal only', 'support-slate'),
+              ('customer_summary', 'Customer summary', 'support-violet'),
+              ('customer_full', 'Customer full', 'brand-turquoise'),
+            ] %}
+              <button name="new_visibility" value="{{ v }}" type="submit"
+                      class="w-full px-3 h-9 text-sm border border-divider text-white/75 hover:bg-{{ accent }}/10 hover:border-{{ accent }}/50 hover:text-{{ accent }} rounded-control transition flex items-center justify-between gap-2
+                             {{ 'opacity-50 pointer-events-none' if finding.customer_visibility == v else '' }}">
+                <span>{{ label }}</span>
+                {% if finding.customer_visibility == v %}
+                  <span class="text-[10px] uppercase tracking-wide text-white/40">current</span>
+                {% endif %}
+              </button>
+            {% endfor %}
+          </form>
+        </div>
+
+        {# Publish — one-click composite action #}
+        {% if finding.state != 'published' or finding.customer_visibility == 'internal_only' %}
+        <div class="bg-surface1 border border-brand-turquoise/30 rounded-card shadow-card p-5">
+          <div class="text-[11px] uppercase tracking-[0.18em] text-brand-turquoise font-bold mb-3">Publish to customer</div>
+          <p class="text-[12px] text-white/55 mb-3 leading-relaxed">
+            Marks state as <code>published</code> and the visibility level you pick. Customer roles will see the finding immediately. Recorded in the audit log.
+          </p>
+          <form action="/findings/{{ finding.id }}/publish" method="post" class="space-y-1.5">
+            <button name="visibility" value="customer_summary" type="submit"
+                    class="w-full px-3 h-9 text-sm bg-support-violet/20 border border-support-violet/40 text-support-violet hover:bg-support-violet/30 rounded-control transition flex items-center justify-between gap-2">
+              <span>Publish — executive summary</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+            <button name="visibility" value="customer_full" type="submit"
+                    class="w-full px-3 h-9 text-sm bg-brand-turquoise/20 border border-brand-turquoise/40 text-brand-turquoise hover:bg-brand-turquoise/30 rounded-control transition flex items-center justify-between gap-2">
+              <span>Publish — full technical detail</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+          </form>
+        </div>
+        {% else %}
+        <div class="bg-surface1 border border-statusOk/30 rounded-card shadow-card p-5">
+          <div class="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-statusOk font-bold mb-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5 9-11"/></svg>
+            Published
+          </div>
+          <p class="text-[12px] text-white/65 mb-3 leading-relaxed">
+            This finding is visible to customer roles at the <code>{{ finding.customer_visibility }}</code> level.
+          </p>
+          <form action="/findings/{{ finding.id }}/state" method="post">
+            <input type="hidden" name="new_state" value="triaged"/>
+            <button type="submit" class="w-full px-3 h-9 text-sm border border-divider text-white/65 hover:bg-statusCritical/10 hover:border-statusCritical/40 hover:text-statusCritical rounded-control transition flex items-center justify-between gap-2">
+              <span>Unpublish (back to triaged)</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+            </button>
+          </form>
+        </div>
+        {% endif %}
         {% endif %}
 
         <div class="bg-surface2/30 border border-divider rounded-card p-4 text-[12px] text-white/55 leading-relaxed">

@@ -129,15 +129,15 @@
 | T-9004 | POC | DEV + BH | done    | `slice` | SharpHound CE JSON parser → networkx DiGraph + transitive Tier 0 identification (well-known RIDs) |
 | T-9005 | POC | DEV + BH | done    | `slice` | Deterministic shortest-path detection (severity-weighted Dijkstra, top K per source, top N reported) |
 | T-9006 | POC | DEV + BH | done    | `slice` | Template-based Finding generator (per path category); deterministic explanations (D-0005) |
-| T-9007 | POC | DEV + UX | todo    | `slice` | Finding triage UI (`new` → `triaged`). **Chunk B.** |
-| T-9008 | POC | DEV + UX | todo    | `slice` | Publish action + `customer_visibility` selector. **Chunk B.** |
-| T-9009 | POC | DEV + UX | partial | `slice` | Customer-visible view — list + detail enforce visibility; publish flow lands in Chunk B |
+| T-9007 | POC | DEV + UX | done    | `slice` | Finding triage UI — explicit state machine (new ↔ triaged ↔ published ↔ retest_requested ↔ closed); state-transition buttons render only allowed targets |
+| T-9008 | POC | DEV + UX | done    | `slice` | Publish action — composite endpoint that auto-triages, sets visibility (customer_summary or customer_full), marks state=published; one-click from the finding detail |
+| T-9009 | POC | DEV + UX | done    | `slice` | Customer-visible view — list + detail enforce visibility server-side; customer executive sees published findings only and gets 404 (not 403) on `internal_only` ones |
 | T-9010 | POC | DEV + UX | todo    | `slice` | Report preview HTML. **Chunk C.** |
-| T-9011 | POC | DEV | partial | `slice` | Audit event for `demo.load`; per-finding-state-change + publish events arrive in Chunk B |
+| T-9011 | POC | DEV | done    | `slice` | Audit log per state change, visibility change, and publish — events with severities `info` / `notable` / `security`; `/audit` view consultant-only |
 | T-9012 | POC | PO + QA | todo    | `slice` | Slice review — demonstrate end-to-end on synthetic data; do **not** expand horizontally before sign-off |
 | T-9013 | POC | DEV | done    | `slice` | `gravity demo load` CLI (idempotent on customer/engagement; new run + findings per load) |
 | T-9014 | POC | DEV + UX | done    | `slice` | `/findings` list + `/findings/{id}` detail with `PathStepList`; visibility gate enforced server-side |
-| T-9015 | POC | QA | done    | `slice` | 9 integration tests (pipeline + UI) + 9 existing smoke tests = **18/18 pass**, lint clean |
+| T-9015 | POC | QA | done    | `slice` | 9 smoke + 9 pipeline + 9 Chunk B tests = **27/27 pass**, lint clean |
 
 ### 9.1 Horizontal expansion — shared core (after slice) — `horizontal`
 
