@@ -2,6 +2,17 @@
 
 {% set active_nav = 'overview' %}
 
+{% macro score_value(value) -%}
+  {%- if value is none -%}—{%- else -%}{{ '%.0f' % value }}{%- endif -%}
+{%- endmacro %}
+
+{% macro sev_chip(label, count, accent) -%}
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-wide rounded-xs border
+             bg-{{ accent }}/15 border-{{ accent }}/30 text-{{ accent }}">
+  <span class="w-1 h-1 bg-{{ accent }} rounded-xs"></span>{{ count }} {{ label }}
+</span>
+{%- endmacro %}
+
 {% block layout %}
 {% include "components/app_header.html" %}
 <div class="flex">
@@ -13,27 +24,48 @@
       <div>
         <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2 flex items-center gap-2">
           <span>Overview · {{ persona_label }}</span>
-          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-support-amber/15 border border-support-amber/30 text-support-amber rounded-xs text-[10px]">
-            <span class="w-1 h-1 bg-support-amber rounded-xs"></span> No data
-          </span>
+          {% if scores is none %}
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-support-amber/15 border border-support-amber/30 text-support-amber rounded-xs text-[10px]">
+              <span class="w-1 h-1 bg-support-amber rounded-xs"></span> No data
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-statusOk/15 border border-statusOk/30 text-statusOk rounded-xs text-[10px]">
+              <span class="w-1 h-1 bg-statusOk rounded-xs"></span> Run loaded
+            </span>
+            {% if customer %}
+              <span class="text-white/50">{{ customer.name }}</span>
+            {% endif %}
+          {% endif %}
         </div>
-        <h1 class="text-3xl font-bold tracking-tight">Welcome back.</h1>
-        <p class="text-white/55 mt-1 max-w-2xl">
-          No customer is loaded yet. The Stage 9 vertical slice brings the first real data:
-          AD + BloodHound evidence → one critical attack path → one published finding.
-        </p>
+        {% if scores is none %}
+          <h1 class="text-3xl font-bold tracking-tight">Welcome back.</h1>
+          <p class="text-white/55 mt-1 max-w-2xl">
+            No customer is loaded yet. Run <code class="bg-surface2 px-1.5 py-0.5 rounded-xs text-white/70">gravity demo load</code>
+            to populate the Contoso fixture and see the four POC modules end-to-end.
+          </p>
+        {% else %}
+          <h1 class="text-3xl font-bold tracking-tight">Posture snapshot.</h1>
+          <p class="text-white/55 mt-1 max-w-2xl">
+            {{ totals.findings }} control outcomes · {{ totals.correlations }} cross-module correlations
+            {% if totals.critical_correlations %}
+              <span class="text-statusCritical">({{ totals.critical_correlations }} critical)</span>
+            {% endif %}
+            across {{ modules|length }} modules.
+          </p>
+        {% endif %}
       </div>
       <div class="flex gap-2 shrink-0">
-        <button class="px-4 h-9 text-sm border border-divider text-white/70 hover:border-brand-turquoise/60 hover:text-brand-turquoise rounded-control transition flex items-center gap-2" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Upload evidence
-        </button>
+        <a href="/findings" class="px-4 h-9 text-sm border border-divider text-white/70 hover:border-brand-turquoise/60 hover:text-brand-turquoise rounded-control transition flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          All findings
+        </a>
       </div>
     </div>
 
-    {# KPI row: one gradient hero card + two neutral cards #}
+    {# KPI row: Current (hero gradient) · Target · Opportunity #}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      {# Hero: Current License Score — vibrant gradient (Violet → Indigo → Turquoise accent), neutral surface elsewhere #}
+
+      {# Current License Score — vibrant gradient hero #}
       <div class="relative overflow-hidden rounded-card shadow-cardLg
                   bg-gradient-to-br from-support-violet/80 via-support-indigo/85 to-support-indigo
                   border border-support-indigo/40 p-5">
@@ -42,16 +74,22 @@
         <div class="relative">
           <div class="flex items-center justify-between mb-3">
             <span class="text-[10px] uppercase tracking-[0.18em] text-white/65 font-bold">Current license score</span>
-            <span class="px-1.5 py-0.5 text-[10px] bg-white/10 text-white/70 rounded-xs uppercase tracking-wide">Live</span>
+            <span class="px-1.5 py-0.5 text-[10px] bg-white/10 text-white/70 rounded-xs uppercase tracking-wide">
+              {% if scores %}Live{% else %}Idle{% endif %}
+            </span>
           </div>
           <div class="flex items-end gap-2">
-            <span class="text-5xl font-bold tabular-nums leading-none text-white">—</span>
+            <span class="text-5xl font-bold tabular-nums leading-none text-white">{{ score_value(scores.current if scores else none) }}</span>
             <span class="text-sm text-white/55 mb-1">/ 100</span>
           </div>
-          <div class="mt-3 flex items-center gap-2 text-[12px] text-white/60">
-            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white/10 rounded-xs">
-              <span class="w-1.5 h-1.5 bg-support-amber rounded-xs"></span> Awaiting evidence
-            </span>
+          <div class="mt-3 text-[12px] text-white/70">
+            {% if scores and scores.current is not none %}
+              Based on licensed controls. <span class="text-white/55">{{ totals.findings }} outcomes scored.</span>
+            {% else %}
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white/10 rounded-xs">
+                <span class="w-1.5 h-1.5 bg-support-amber rounded-xs"></span> Awaiting evidence
+              </span>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -66,10 +104,18 @@
           </span>
         </div>
         <div class="flex items-end gap-2">
-          <span class="text-5xl font-bold tabular-nums leading-none text-white/35">—</span>
+          <span class="text-5xl font-bold tabular-nums leading-none {% if scores and scores.target is not none %}text-white{% else %}text-white/35{% endif %}">
+            {{ score_value(scores.target if scores else none) }}
+          </span>
           <span class="text-sm text-white/30 mb-1">/ 100</span>
         </div>
-        <div class="mt-3 text-[12px] text-white/40">Best-practice baseline</div>
+        <div class="mt-3 text-[12px] text-white/40">
+          {% if scores and scores.target is not none %}
+            Best-practice baseline incl. unlicensed gaps.
+          {% else %}
+            Best-practice baseline
+          {% endif %}
+        </div>
       </div>
 
       {# Opportunity gap #}
@@ -80,106 +126,153 @@
           <span class="inline-flex items-center gap-1 text-[10px] text-white/50 uppercase tracking-wide">Δ</span>
         </div>
         <div class="flex items-end gap-2">
-          <span class="text-5xl font-bold tabular-nums leading-none text-white/35">—</span>
+          <span class="text-5xl font-bold tabular-nums leading-none {% if scores and scores.opportunity is not none %}text-support-amber{% else %}text-white/35{% endif %}">
+            {%- if scores and scores.opportunity is not none -%}+{{ '%.0f' % scores.opportunity }}{%- else -%}—{%- endif -%}
+          </span>
         </div>
-        <div class="mt-3 text-[12px] text-white/40">Target − Current</div>
+        <div class="mt-3 text-[12px] text-white/40">Points to close via licensed / config gaps</div>
       </div>
     </div>
 
-    {# Mid row: Arc gauge + AI Threat Forecast chart (3 + 6 columns) #}
-    <div class="grid grid-cols-1 lg:grid-cols-9 gap-4 mb-6">
+    {# Severity strip — non-correlation findings #}
+    {% if scores %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card p-4 mb-6 flex items-center gap-4 flex-wrap">
+      <span class="text-[11px] uppercase tracking-[0.18em] text-white/45 font-bold">Findings</span>
+      {{ sev_chip("Critical", totals.by_severity.get("critical", 0), "statusCritical") }}
+      {{ sev_chip("High",     totals.by_severity.get("high",     0), "support-rose") }}
+      {{ sev_chip("Medium",   totals.by_severity.get("medium",   0), "support-amber") }}
+      {{ sev_chip("Low",      totals.by_severity.get("low",      0), "support-sky") }}
+      {{ sev_chip("Info",     totals.by_severity.get("info",     0), "support-slate") }}
+      <span class="ml-auto text-[11px] text-white/45">
+        Cross-module correlations: <span class="text-white tabular-nums">{{ totals.correlations }}</span>
+        {% if totals.critical_correlations %}
+          · <span class="text-statusCritical">{{ totals.critical_correlations }} critical</span>
+        {% endif %}
+      </span>
+    </div>
+    {% endif %}
 
-      {# System Health gauge (arc) #}
-      <div class="lg:col-span-3 bg-surface1 border border-divider rounded-card shadow-card p-5 flex flex-col">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-base font-semibold">System Health</h3>
-          <button class="text-[11px] px-2 py-1 border border-divider rounded-control text-white/65 hover:text-white hover:border-white/30 transition" disabled>Run scan</button>
-        </div>
-        <div class="grid grid-cols-3 gap-3 mt-1 mb-3">
-          <div>
-            <div class="text-lg font-bold tabular-nums text-brand-turquoise">—%</div>
-            <div class="text-[10px] uppercase tracking-wide text-white/45">CPU</div>
+    {# Headline finding (consultant: any; customer: only customer-visible) #}
+    {% if headline %}
+    <div class="relative bg-surface1 border border-divider rounded-card shadow-cardLg overflow-hidden mb-6">
+      <div class="absolute inset-x-0 top-0 h-1
+                  {% if headline.severity == 'critical' %}bg-gradient-to-r from-statusCritical via-support-rose to-support-amber
+                  {% elif headline.severity == 'high' %}bg-gradient-to-r from-support-rose via-support-amber to-support-amber/40
+                  {% elif headline.severity == 'medium' %}bg-gradient-to-r from-support-amber to-support-amber/30
+                  {% else %}bg-gradient-to-r from-support-slate/60 to-support-slate/20{% endif %}"></div>
+      <div class="p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+        <div class="lg:col-span-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-wide rounded-xs border
+                         {% if headline.severity == 'critical' %}bg-statusCritical/15 border-statusCritical/30 text-statusCritical
+                         {% elif headline.severity == 'high' %}bg-support-rose/15 border-support-rose/30 text-support-rose
+                         {% elif headline.severity == 'medium' %}bg-support-amber/15 border-support-amber/30 text-support-amber
+                         {% elif headline.severity == 'low' %}bg-support-sky/15 border-support-sky/30 text-support-sky
+                         {% else %}bg-support-slate/15 border-support-slate/30 text-support-slate{% endif %}">
+              <span class="w-1 h-1
+                         {% if headline.severity == 'critical' %}bg-statusCritical
+                         {% elif headline.severity == 'high' %}bg-support-rose
+                         {% elif headline.severity == 'medium' %}bg-support-amber
+                         {% elif headline.severity == 'low' %}bg-support-sky
+                         {% else %}bg-support-slate{% endif %} rounded-xs"></span>
+              {{ headline.severity }}
+            </span>
+            <span class="text-[10px] uppercase tracking-wide text-white/45">{{ headline.module_id }}</span>
+            <span class="text-[10px] uppercase tracking-wide text-white/30">·</span>
+            <span class="text-[10px] uppercase tracking-wide text-white/45">risk {{ headline.risk_score }}</span>
           </div>
-          <div>
-            <div class="text-lg font-bold tabular-nums text-support-amber">—%</div>
-            <div class="text-[10px] uppercase tracking-wide text-white/45">Memory</div>
-          </div>
-          <div>
-            <div class="text-lg font-bold tabular-nums text-support-rose">—%</div>
-            <div class="text-[10px] uppercase tracking-wide text-white/45">Disk</div>
-          </div>
-        </div>
-        <div class="flex-1 flex items-center justify-center py-2">
-          {% with value=0, label="awaiting data", accent="brand-turquoise" %}
-            {% include "components/arc_gauge.html" %}
-          {% endwith %}
-        </div>
-        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2 pt-3 border-t border-divider text-[12px]">
-          <div class="flex items-center justify-between"><span class="text-white/55">Firewall</span><span class="text-support-slate">—</span></div>
-          <div class="flex items-center justify-between"><span class="text-white/55">SIEM</span><span class="text-support-slate">—</span></div>
-          <div class="flex items-center justify-between"><span class="text-white/55">AI Monitor</span><span class="text-support-slate">—</span></div>
-          <div class="flex items-center justify-between"><span class="text-white/55">Patches</span><span class="text-support-slate">—</span></div>
-        </div>
-      </div>
-
-      {# Risk Forecast chart card #}
-      <div class="lg:col-span-6 bg-surface1 border border-divider rounded-card shadow-card p-5">
-        <div class="flex items-center justify-between mb-1">
-          <div>
-            <h3 class="text-base font-semibold">Risk forecast</h3>
-            <p class="text-[12px] text-white/45 mt-0.5">Sample shape — wired to real findings in Stage 9.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="flex items-center gap-1 px-1 bg-surface2/60 border border-divider rounded-control text-[11px]">
-              <button class="px-2 py-1 bg-surface2 text-white rounded-control" disabled>1D</button>
-              <button class="px-2 py-1 text-white/55" disabled>1W</button>
-              <button class="px-2 py-1 text-white/55" disabled>1M</button>
-              <button class="px-2 py-1 text-white/55" disabled>3M</button>
-            </div>
-            <button class="text-[11px] px-2.5 py-1.5 border border-divider rounded-control text-white/65 hover:text-white hover:border-white/30 transition flex items-center gap-1.5" disabled>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-              Refresh
-            </button>
+          <h2 class="text-xl font-bold leading-tight">{{ headline.title }}</h2>
+          <p class="text-white/65 mt-2 leading-relaxed">
+            {% if persona.value == 'consultant' %}
+              {{ headline.summary_internal }}
+            {% else %}
+              {{ headline.summary_customer or headline.summary_internal }}
+            {% endif %}
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a href="/findings/{{ headline.id }}" class="inline-flex items-center gap-1.5 px-3 h-8 text-[12px] border border-brand-turquoise/40 text-brand-turquoise hover:bg-brand-turquoise/10 rounded-control transition">
+              Open finding
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </a>
+            <a href="/modules/{{ headline.module_id if headline.module_id != 'correlation' else 'bloodhound' }}" class="inline-flex items-center gap-1.5 px-3 h-8 text-[12px] border border-divider text-white/65 hover:text-white hover:border-white/30 rounded-control transition">
+              View module
+            </a>
           </div>
         </div>
-
-        {# Legend #}
-        <div class="flex items-center gap-4 text-[11px] text-white/60 mb-3 mt-2">
-          <span class="flex items-center gap-1.5"><span class="w-2 h-0.5 bg-brand-turquoise"></span>Actual threats</span>
-          <span class="flex items-center gap-1.5"><span class="w-2 h-0.5 bg-support-violet" style="border-top:1px dashed;"></span>Predicted</span>
+        <div class="lg:col-span-2">
+          <div class="bg-surface2/60 border border-divider rounded-control p-4">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold mb-3">Headline metadata</div>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
+              <dt class="text-white/45">Category</dt><dd class="text-white/85 truncate">{{ headline.category }}</dd>
+              <dt class="text-white/45">License</dt><dd class="text-white/85">{{ headline.license_status.replace('_', ' ') }}</dd>
+              <dt class="text-white/45">State</dt><dd class="text-white/85">{{ headline.state }}</dd>
+              <dt class="text-white/45">Visibility</dt><dd class="text-white/85">{{ headline.customer_visibility.replace('_', ' ') }}</dd>
+            </dl>
+          </div>
         </div>
-
-        {% with insight_title="AI Insight (sample)",
-                insight_body="The system detects elevated risk of network intrusions; deviation (+17%) impacts Lock and Cloud nodes. Recommend: enable auto-firewall update and review manual patch queue. (Sample copy — replaced by deterministic explanations from the analyzer in Stage 9.)"
-        %}
-          {% include "components/sample_chart.html" %}
-        {% endwith %}
       </div>
     </div>
+    {% endif %}
 
-    {# Module strip — each module's category colour #}
+    {# Module strip — each module's category colour, real per-module scores + status #}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {% for module in modules %}
-      <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-4 group hover:border-{{ module.accent }}/40 hover:-translate-y-0.5 transition">
-        <div class="absolute top-0 left-0 right-0 h-px bg-{{ module.accent }}/70"></div>
+      {% for entry in module_strip %}
+      {% set m = entry.module %}
+      {% set ms = entry.scores %}
+      <a href="/modules/{{ m.id }}" class="relative bg-surface1 border border-divider rounded-card shadow-card p-4 group hover:border-{{ m.accent }}/40 hover:-translate-y-0.5 transition block">
+        <div class="absolute top-0 left-0 right-0 h-px bg-{{ m.accent }}/70"></div>
         <div class="flex items-start justify-between gap-2 mb-3">
-          <span class="inline-flex items-center justify-center w-9 h-9 bg-{{ module.accent }}/15 border border-{{ module.accent }}/30 rounded-control">
-            <span class="w-2 h-2 bg-{{ module.accent }} rounded-xs"></span>
+          <span class="inline-flex items-center justify-center w-9 h-9 bg-{{ m.accent }}/15 border border-{{ m.accent }}/30 rounded-control">
+            <span class="w-2 h-2 bg-{{ m.accent }} rounded-xs"></span>
           </span>
           <span class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Module</span>
         </div>
-        <div class="font-semibold text-white">{{ module.title }}</div>
+        <div class="font-semibold text-white">{{ m.title }}</div>
         <div class="mt-3 flex items-center justify-between">
-          <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-support-slate/20 text-white/65 rounded-xs border border-white/10">
-            <span class="w-1 h-1 bg-support-slate rounded-xs"></span> Pending evidence
-          </span>
-          <span class="text-[11px] tabular-nums text-white/35">— / —</span>
+          {% if entry.status == 'pending' %}
+            <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-support-slate/20 text-white/65 rounded-xs border border-white/10">
+              <span class="w-1 h-1 bg-support-slate rounded-xs"></span> Pending evidence
+            </span>
+            <span class="text-[11px] tabular-nums text-white/35">— / —</span>
+          {% elif entry.status == 'attention' %}
+            <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-statusCritical/15 text-statusCritical rounded-xs border border-statusCritical/30">
+              <span class="w-1 h-1 bg-statusCritical rounded-xs"></span> Attention
+            </span>
+            <span class="text-[11px] tabular-nums text-white/85">{{ score_value(ms.current) }} / {{ score_value(ms.target) }}</span>
+          {% elif entry.status == 'watch' %}
+            <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-support-amber/15 text-support-amber rounded-xs border border-support-amber/30">
+              <span class="w-1 h-1 bg-support-amber rounded-xs"></span> Watch
+            </span>
+            <span class="text-[11px] tabular-nums text-white/85">{{ score_value(ms.current) }} / {{ score_value(ms.target) }}</span>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-statusOk/15 text-statusOk rounded-xs border border-statusOk/30">
+              <span class="w-1 h-1 bg-statusOk rounded-xs"></span> OK
+            </span>
+            <span class="text-[11px] tabular-nums text-white/85">{{ score_value(ms.current) }} / {{ score_value(ms.target) }}</span>
+          {% endif %}
         </div>
-      </div>
+        {% if ms and ms.has_data %}
+        <div class="mt-2 flex gap-1">
+          {% for sev, count in ms.severity_counts.items() %}
+            {% if count > 0 %}
+              <span class="px-1.5 py-0.5 text-[10px] tabular-nums rounded-xs
+                         {% if sev == 'critical' %}bg-statusCritical/15 text-statusCritical
+                         {% elif sev == 'high' %}bg-support-rose/15 text-support-rose
+                         {% elif sev == 'medium' %}bg-support-amber/15 text-support-amber
+                         {% elif sev == 'low' %}bg-support-sky/15 text-support-sky
+                         {% else %}bg-support-slate/15 text-support-slate{% endif %}">
+                {{ count }} {{ sev[:1]|upper }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </a>
       {% endfor %}
     </div>
 
-    {# Bottom row: empty-state hero (richer) #}
+    {# Bottom row: stays as a hero only when there's NO data yet. Otherwise drop it for signal-to-noise. #}
+    {% if scores is none %}
     <div class="relative bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
       <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-turquoise via-support-violet to-support-rose"></div>
       <div class="absolute -top-12 -right-12 w-48 h-48 bg-support-violet/10 rotate-12 rounded-card"></div>
@@ -188,39 +281,26 @@
       <div class="relative p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
         <div class="lg:col-span-3">
           <div class="inline-block px-2.5 py-1 bg-brand-turquoise/15 border border-brand-turquoise/30 text-brand-turquoise text-[10px] uppercase tracking-widest font-bold mb-4 rounded-xs">
-            Stage 8.1 · Skeleton
+            POC build · awaiting evidence
           </div>
-          <h2 class="text-2xl font-bold">Empty platform shell.</h2>
+          <h2 class="text-2xl font-bold">Load the Contoso fixture.</h2>
           <p class="text-white/65 mt-3 leading-relaxed">
-            No customers, engagements, evidence, controls, findings or reports exist yet.
-            The next build step (Stage 9 — POC build) starts with a single end-to-end
-            <span class="text-white font-semibold">vertical slice</span>:
-            upload → parse one critical attack path → generate one Finding → publish → customer view → report preview.
+            Run <code class="bg-surface2 px-1.5 py-0.5 rounded-xs text-white/85">gravity demo load</code>
+            to ingest synthetic AD, BloodHound, Silverfort and Entra evidence,
+            then refresh this page to see the four POC modules end-to-end.
           </p>
           <div class="mt-5 flex flex-wrap gap-2">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] uppercase tracking-wide bg-statusInfo/10 text-support-indigo rounded-xs border border-support-indigo/30">
               <span class="w-1.5 h-1.5 bg-support-indigo rounded-xs"></span> Persona: {{ persona.value }}
             </span>
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] uppercase tracking-wide bg-statusNeutral/8 text-white/55 rounded-xs border border-white/10">
-              <span class="w-1.5 h-1.5 bg-support-slate rounded-xs"></span> Next: Stage 8.2 sample data
+              <span class="w-1.5 h-1.5 bg-support-slate rounded-xs"></span> Synthetic data only
             </span>
-          </div>
-        </div>
-
-        <div class="lg:col-span-2">
-          <div class="bg-surface2/60 border border-divider rounded-control p-4">
-            <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold mb-3">Demo journey (POC V1)</div>
-            <ol class="space-y-2.5 text-[13px]">
-              <li class="flex items-center gap-3"><span class="w-5 h-5 inline-flex items-center justify-center text-[10px] font-bold bg-brand-turquoise/15 border border-brand-turquoise/30 text-brand-turquoise rounded-xs">1</span><span class="text-white/75">Upload AD + BH evidence</span></li>
-              <li class="flex items-center gap-3"><span class="w-5 h-5 inline-flex items-center justify-center text-[10px] font-bold bg-support-rose/15 border border-support-rose/30 text-support-rose rounded-xs">2</span><span class="text-white/75">Parse one critical attack path</span></li>
-              <li class="flex items-center gap-3"><span class="w-5 h-5 inline-flex items-center justify-center text-[10px] font-bold bg-support-violet/15 border border-support-violet/30 text-support-violet rounded-xs">3</span><span class="text-white/75">Generate one Finding (correlated)</span></li>
-              <li class="flex items-center gap-3"><span class="w-5 h-5 inline-flex items-center justify-center text-[10px] font-bold bg-support-sky/15 border border-support-sky/30 text-support-sky rounded-xs">4</span><span class="text-white/75">Publish → customer view</span></li>
-              <li class="flex items-center gap-3"><span class="w-5 h-5 inline-flex items-center justify-center text-[10px] font-bold bg-statusOk/15 border border-statusOk/30 text-statusOk rounded-xs">5</span><span class="text-white/75">Render report preview</span></li>
-            </ol>
           </div>
         </div>
       </div>
     </div>
+    {% endif %}
 
   </main>
 </div>

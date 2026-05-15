@@ -31,7 +31,7 @@ Stage map (full detail in `WORKING_APPROACH.md` §4 — operating model upgraded
 | 6 | POC backlog | 🟡 skeleton in `TASKS.md`; refined after Cycles 1–5 (vertical-slice items must be marked) |
 | 7 | Management review (go/no-go on MVP) | ⬜ pending |
 | 8 | **Build preparation** (final backlog · skeleton · sample data plan · dev handoff · slice tasks ready) | 🟡 **8.1 done** (T-6001/2/4/5; T-6003 blocked on WSL); 8.2 + 8.3 pending |
-| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | 🟢 **Slice complete (A+B+C) + horizontal expansion (D+E).** All 4 POC modules are now real: AD (Posture), BloodHound (Attack-path), Silverfort (Coverage matrix with gap markers), Entra (License-aware tenant config with real data — owned SKUs, hybrid admin bridge, 6 controls demonstrating `licensed_enabled` + `licensed_disabled` + `not_licensed`). 18 findings + 6 cross-module correlations (3 BH-SF Critical + 2 BH-SF High + 1 AD-Entra hybrid admin bridge). 60/60 tests pass. T-9012 still pending Kristof's walkthrough. |
+| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | 🟢 **Slice complete (A+B+C) + horizontal expansion (D+E+F).** All 4 POC modules are now real: AD (Posture), BloodHound (Attack-path), Silverfort (Coverage matrix with gap markers), Entra (License-aware tenant config — owned SKUs, hybrid admin bridge, 6 controls demonstrating `licensed_enabled` + `licensed_disabled` + `not_licensed`). 18 findings + 6 cross-module correlations (3 BH-SF Critical + 2 BH-SF High + 1 AD-Entra hybrid admin bridge). **Chunk F: Overview now shows real Current / Target / Opportunity scores driven by the score engine; per-module status strip and persona-filtered headline finding.** 72/72 tests pass. T-9012 still pending Kristof's walkthrough. |
 
 ---
 
@@ -125,4 +125,4 @@ Suggested cadence: see `WORKING_APPROACH.md` §16 — five working sessions to r
 
 ---
 
-*Last updated: 2026-05-15 — Stages 1–5 drafted; operating model upgraded to 9 stages (D-0012 … D-0017); ready for Cycle 1 review.*
+*Last updated: 2026-05-15 — Stage 9 Chunk F complete: score engine + Overview real data live; 72/72 tests pass.*

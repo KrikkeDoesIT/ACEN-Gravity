@@ -24,6 +24,88 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Stage 9 horizontal expansion — Chunk F (Score engine + Overview real data)
+
+Stage: 9.7 (Score engine + Overview real data)
+By: Claude Code.
+
+Lights up the three KPI cards on the Overview page with real Current /
+Target / Opportunity scores derived from the Finding table. Per-module
+breakdowns drive the module strip; the headline finding teaser is
+persona-filtered (consultant sees any; customer roles see only published
+findings). Completes the demo journey's headline question: *"What's our
+posture and what's the commercial upside?"*
+
+Added — scoring engine (`src/platform_core/scoring/`)
+- `engine.py` — `compute_scores(session, run_id) → EngagementScores`.
+  Implements LICENSE_MODEL §7 against the Finding table:
+  - Pass factor by severity: info/low=1.0, medium=0.5, high/critical=0.0.
+  - Current eligibility: `license_status ∈ {licensed_enabled,
+    licensed_disabled, licensed_misconfigured}`.
+  - Target eligibility: everything except `not_applicable` / `unknown`;
+    `not_licensed` / `requires_add_on` / `available_in_higher_tier`
+    force-fail.
+  - Per-module scores aggregated into `ModuleScores` records;
+    engagement = unweighted average of modules with eligible controls.
+  - Correlation findings (`module_id == "correlation"`) excluded from
+    per-module aggregation; reported separately as `correlation_count`
+    and `critical_correlation_count` for the UI headline strip.
+- `__init__.py` re-exports `compute_scores`, `EngagementScores`,
+  `ModuleScores`.
+
+Changed — Overview route + template
+- `src/platform_core/web/routes/home.py` — when an assessment run
+  exists, computes `EngagementScores`, builds a module strip joining
+  the static `module_registry` with per-module scores, and selects a
+  persona-appropriate headline finding (consultant: any; customer:
+  customer-visible only). Falls back to the original Stage 8.1 empty
+  state when no run is loaded.
+- `src/platform_core/web/templates/home.html` — three KPI cards now
+  read real values; severity strip shows critical/high/medium/low/info
+  counts plus a cross-module correlations summary; headline finding
+  teaser renders the most severe finding (with persona-aware summary
+  selection) and "Open finding" + "View module" CTAs; module strip
+  cards link to `/modules/{id}` and show per-module status
+  (OK / Watch / Attention / Pending) with `current / target` and a
+  per-severity mini-strip.
+
+Contoso scores (synthetic fixture):
+- BloodHound:  current=20.0, target=20.0 (3 HIGH + 2 MEDIUM paths)
+- Silverfort:  current=0.0,  target=0.0  (1 HIGH SF-AD-001)
+- Entra:       current=50.0, target=41.7 (6 controls, 1 not_licensed)
+- Engagement:  current=23.3, target=20.6, opportunity=+2.7
+- 6 correlations (3 critical BH-SF + 2 high BH-SF + 1 high AD-Entra)
+
+Opportunity sign convention
+- LICENSE_MODEL §7.4 writes `Opportunity = Target − Current`. With
+  §7.3's target_factor mapping (`not_licensed` etc → 0), Target ≤ Current
+  always, making §7.4's Opportunity ≤ 0 — which conflicts with §1's
+  framing *"close X points of risk"* (a positive number).
+- Chunk F implements `Opportunity = Current − Target` (always ≥ 0) so
+  the UI badge reads as a positive "+N points to close". REVIEW_NOTES
+  item 17 added; resolve at Cycle 2 review by editing §7.4 or relabeling
+  the UI.
+
+Tests (`tests/test_slice_chunk_f.py`)
+- 12 new tests covering: engagement + module breakdowns, correlation
+  exclusion from per-module scores, `not_licensed` exclusion from Current
+  but inclusion in Target, severity → pass_factor mapping (verified on
+  Silverfort), BH per-path scoring (3 HIGH + 2 MEDIUM = 20%), empty-run
+  handling (None scores, not zeros), no-data Overview empty state,
+  consultant headline rendering, customer-executive headline filtering
+  (no internal_only as headline; appears after publish), module strip
+  status, severity strip + correlation count.
+
+72/72 tests pass. Lint clean. Live HTTP probe of `/` confirms KPI cards,
+severity strip, headline finding, and module strip all render real data.
+
+Recommended next: **Chunk G** — Findings filter UI (severity / module /
+state / license_status / visibility) on `/findings`, plus a saved
+"executive view" preset for the customer report draft workflow. After
+Chunk G, T-9012 is fully demoable and the slice review can be scheduled.
+
+---
+
 ## 2026-05-15 — Stage 9 horizontal expansion — Chunk E (Entra module + AD↔Entra correlation)
 
 Stage: 9.6 (Entra module + cross-module correlation expansion)

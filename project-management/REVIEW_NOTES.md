@@ -78,6 +78,12 @@ Source: drafting `ENTRA_MODULE_DESIGN.md`.
 15. **Hybrid Identity Administrator categorized as high-privilege** — not explicitly in the brief but consistent with Entra Connect Tier 0 logic in §17 (ENTRA-HYBRID-002). Confirm at Cycle 3 review.
 16. **POC `licensed_disabled` demonstrator = ENTRA-CA-003 (Legacy Auth Blocked)** — chosen per the explicit cue in `POC_V1_SCOPE.md` §4 step 7. POC `not_licensed` demonstrator = ENTRA-LIC-004 (Identity Protection), with downstream effects on ENTRA-CA-004 and ENTRA-PRIV-003. Confirm at Cycle 3 review.
 
+### Scoring engine — Opportunity sign convention
+Date: 2026-05-15
+Source: implementing `platform_core/scoring/engine.py` (Chunk F).
+
+17. **Opportunity sign convention** — `LICENSE_MODEL.md` §7.4 writes `Opportunity = Target − Current`. With §7.3's `target_factor` mapping (`not_licensed` / `requires_add_on` / `available_in_higher_tier` all → 0), Target's denominator includes strictly more controls than Current and they all fail, so `Target ≤ Current` always — making the §7.4 Opportunity ≤ 0. This conflicts with §1's commercial framing *"With Entra ID P2, you would close X points of risk"*, which clearly intends a positive number. The Chunk F implementation uses `Opportunity = Current − Target` (always ≥ 0) so the UI badge can read "+N points to close". Cycle 2 review item: update LICENSE_MODEL.md §7.4 sign, OR keep §7.4 as-is and label the UI "Opportunity (signed)". Recommend the former (it's a one-character edit and matches §1's framing).
+
 ---
 
 ## Resolved review items
