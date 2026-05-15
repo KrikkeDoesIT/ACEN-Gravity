@@ -206,6 +206,17 @@
 
 | ID | Tier | Owner | Status | Task |
 |---|---|---|---|---|
+| T-9020 | POC | DEV + UX | done | `GET /modules/{module_id}` route + archetype dispatcher per `UI_DESIGN_DIRECTION.md` §4.3 |
+| T-9021 | POC | DEV + UX | done | AD module page — Posture archetype (status cards by category + control coverage donut + priority findings + privileged-group membership table) |
+| T-9022 | POC | DEV + UX | done | BloodHound module page — Attack-path archetype (context KPIs, ranked critical paths with inline path-step previews, no control-coverage ring) |
+| T-9023 | POC | DEV + UX | done | Silverfort module page — Coverage archetype (connector status, Tier 0 coverage %, **CoverageMatrix** policy × target with covered / excluded / n.a. cells + Overall column, coverage-gap finding list) |
+| T-9024 | POC | DEV + UX | done | Entra module page — License-aware tenant config archetype (six placeholder cards with `LicenseBadge`s + Opportunity card + no-data state; parser lands Chunk E) |
+| T-9025 | POC | DEV + UX | done | Side-nav module links wired up with active-pill on the matching module |
+
+### 9.8.1 UI shell — _legacy / pending_ — `horizontal`
+
+| ID | Tier | Owner | Status | Task |
+|---|---|---|---|---|
 | T-6080 | POC | DEV + UX | todo | App shell (top nav, side nav, footer, ACEN branding) |
 | T-6081 | POC | DEV + UX | todo | Overview dashboard (per `UI_DESIGN_DIRECTION.md`) |
 | T-6082 | POC | DEV + UX | todo | Customer / engagement / assessment run pages |

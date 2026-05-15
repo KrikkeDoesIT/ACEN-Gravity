@@ -58,6 +58,9 @@ ignore = ["E501", "RUF002", "RUF003"]
 "src/**/manifest.py" = ["ARG"]
 # B008 — typer requires `typer.Option(...)` as the default value of CLI args.
 "src/platform_core/cli.py" = ["B008"]
+# ARG001 — placeholder archetype builders keep their signature even when not
+# all params are used yet, so the four archetypes have a uniform contract.
+"src/platform_core/web/routes/modules.py" = ["ARG001"]
 
 [tool.mypy]
 python_version = "3.12"

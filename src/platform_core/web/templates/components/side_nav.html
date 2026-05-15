@@ -21,10 +21,12 @@
         {% endif %}
         {% for module in modules %}
           {% if is_nav_visible(persona, module.id) %}
+            {% set is_active = (active_nav == module.id) or (active_module_id is defined and active_module_id == module.id) %}
           <li>
-            <a href="#" class="group flex items-center gap-3 px-3 py-2 rounded-control text-white/65 border border-transparent hover:bg-surface2/50 hover:text-white transition">
+            <a href="/modules/{{ module.id }}" class="group flex items-center gap-3 px-3 py-2 rounded-control transition
+               {{ 'bg-' ~ module.accent ~ '/15 text-white border border-' ~ module.accent ~ '/40 shadow-card' if is_active else 'text-white/65 border border-transparent hover:bg-surface2/50 hover:text-white' }}">
               <span class="inline-flex items-center justify-center w-4 h-4">
-                <span class="block w-2 h-2 bg-{{ module.accent }} group-hover:scale-125 transition rounded-xs"></span>
+                <span class="block w-2 h-2 bg-{{ module.accent }} {{ 'scale-125' if is_active else 'group-hover:scale-125' }} transition rounded-xs"></span>
               </span>
               <span>{{ module.nav_label }}</span>
             </a>

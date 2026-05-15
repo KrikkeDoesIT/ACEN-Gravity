@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'bloodhound' %}
+{% set active_module_id = 'bloodhound' %}
+
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+
+{% set category_label = {
+  'acl_abuse': 'ACL abuse',
+  'group_nesting_priv_esc': 'Group nesting',
+  'delegation': 'Delegation',
+  'dcsync': 'DCSync',
+  'privilege_escalation': 'Privilege escalation',
+} %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    {% with subtitle="Deterministic shortest-weighted-path detection to Tier 0. No AI in the critical path (D-0005)." %}
+      {% include "components/module_header.html" %}
+    {% endwith %}
+
+    {% if not run or not evidence %}
+      {% with headline="No SharpHound evidence loaded yet",
+              body="Upload a SharpHound CE ZIP via the AD toolkit, or `gravity demo load` for the Contoso demo data." %}
+        {% include "components/module_no_data.html" %}
+      {% endwith %}
+    {% else %}
+
+      {% set bh_evidence = evidence[0] %}
+      {% set bh_payload = bh_evidence.payload or {} %}
+
+      {# Context strip — 3 mini KPIs (no control-coverage ring on this archetype) #}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-px bg-support-rose/70"></div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Tier 0 reachable</div>
+          {% set reachable_count = page_data.paths|length %}
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-4xl font-bold tabular-nums text-white">{{ reachable_count }}</span>
+            <span class="text-sm text-white/45">critical path{{ '' if reachable_count == 1 else 's' }}</span>
+          </div>
+          <div class="text-[11px] text-white/45 mt-2">{{ bh_payload.get('tier0_count', 0) }} Tier 0 principals</div>
+        </div>
+
+        <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-px bg-support-violet/70"></div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Top category</div>
+          {% set top = page_data.top_category %}
+          <div class="mt-2 text-xl font-bold text-white">{{ category_label.get(top, top or '—') }}</div>
+          <div class="text-[11px] text-white/45 mt-2">
+            {% for cat, n in (page_data.category_counts or {}).items() %}
+              <span class="inline-block mr-3"><span class="text-white/85 tabular-nums">{{ n }}</span> {{ category_label.get(cat, cat) }}</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-px bg-support-amber/70"></div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Graph size</div>
+          <div class="mt-2 flex items-baseline gap-3">
+            <div>
+              <span class="text-3xl font-bold tabular-nums text-white">{{ bh_payload.get('node_count', 0) }}</span>
+              <span class="text-[11px] text-white/45 ml-1">nodes</span>
+            </div>
+            <div>
+              <span class="text-3xl font-bold tabular-nums text-white">{{ bh_payload.get('edge_count', 0) }}</span>
+              <span class="text-[11px] text-white/45 ml-1">edges</span>
+            </div>
+          </div>
+          <div class="text-[11px] text-white/45 mt-2 font-mono">parser v0.1</div>
+        </div>
+      </div>
+
+      {# The page = ranked critical paths list. This is the attack-path archetype's defining surface. #}
+      <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+        <div class="px-5 py-3 border-b border-divider flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-semibold">Ranked critical paths</h3>
+            <div class="text-[11px] text-white/45">Top {{ page_data.paths|length }} by deterministic risk score (D-0005)</div>
+          </div>
+          <a href="/findings" class="text-[12px] text-brand-turquoise/85 hover:text-brand-turquoise transition">All BH findings →</a>
+        </div>
+
+        {% if page_data.paths %}
+        <ul class="divide-y divide-divider">
+          {% for p in page_data.paths %}
+            {% set sev = severity_class.get(p.severity, 'support-slate') %}
+            <li>
+              <a href="/findings/{{ p.finding_id }}" class="block px-5 py-4 hover:bg-surface2/40 transition">
+                <div class="flex items-center gap-4">
+                  <span class="inline-flex items-center justify-center w-8 h-8 bg-{{ sev }}/15 border border-{{ sev }}/40 rounded-control shrink-0">
+                    <span class="text-[11px] font-bold text-{{ sev }}">{{ loop.index }}</span>
+                  </span>
+
+                  <div class="grow min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5">
+                      <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-{{ sev }}/15 border border-{{ sev }}/40 rounded-xs">
+                        <span class="w-1 h-1 bg-{{ sev }} rounded-xs"></span>
+                        <span class="text-[10px] uppercase tracking-wide text-{{ sev }} font-bold">{{ p.severity }}</span>
+                      </span>
+                      <span class="text-[11px] uppercase tracking-wide text-white/55">{{ category_label.get(p.category, p.category) }}</span>
+                      <span class="text-[11px] text-white/40">·</span>
+                      <span class="text-[11px] text-white/55 tabular-nums">{{ p.length }} hop{{ '' if p.length == 1 else 's' }}</span>
+                    </div>
+
+                    {# Mini path preview — collapse if very long #}
+                    <div class="flex items-center gap-2 text-[12.5px] flex-wrap">
+                      {% for step in p.steps %}
+                        {% if loop.first %}
+                          <span class="font-mono text-white/90">{{ step.from_label }}</span>
+                        {% endif %}
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-surface3/40 border border-white/10 rounded-xs">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-white/45"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                          <span class="text-[10px] uppercase tracking-wide text-white/65">{{ step.edge_type }}</span>
+                        </span>
+                        <span class="font-mono text-white/90">{{ step.to_label }}</span>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                  <div class="text-right shrink-0">
+                    <div class="text-2xl font-bold tabular-nums text-white">{{ p.risk_score }}</div>
+                    <div class="text-[10px] uppercase tracking-wide text-white/45">Risk</div>
+                  </div>
+
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-white/35 shrink-0"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          <div class="px-5 py-10 text-center text-white/55 text-sm">No paths to Tier 0 detected.</div>
+        {% endif %}
+      </div>
+
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}

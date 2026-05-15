@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'ad' %}
+{% set active_module_id = 'ad' %}
+
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    {% with subtitle="Configuration baseline posture across health, privileged exposure, kerberos, delegation, GPO, and Tier 0. Findings rank by risk score." %}
+      {% include "components/module_header.html" %}
+    {% endwith %}
+
+    {% if not run or not evidence %}
+      {% with headline="No AD evidence loaded yet" %}
+        {% include "components/module_no_data.html" %}
+      {% endwith %}
+    {% else %}
+
+      {# Posture status cards — one per AD category (Health / Privileged / Kerberos / Delegation / GPO).
+         Slice scope: only Privileged is real (we have privileged-groups parser). Others are placeholders
+         with a "Pending" pill so the archetype shape is visible. #}
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+        {% set categories = [
+          {'id': 'health',      'title': 'Health',       'subtitle': 'DC / replication / DNS / SYSVOL', 'status': 'pending'},
+          {'id': 'privileged',  'title': 'Privileged',   'subtitle': 'Tier 0 group membership',          'status': 'evaluated'},
+          {'id': 'kerberos',    'title': 'Kerberos',     'subtitle': 'AS-REP / kerberoastable / RC4',    'status': 'pending'},
+          {'id': 'delegation',  'title': 'Delegation',   'subtitle': 'Unconstrained / RBCD',             'status': 'pending'},
+          {'id': 'gpo',         'title': 'GPO',          'subtitle': 'Weak GPOs / OU delegation',        'status': 'pending'},
+        ] %}
+        {% for cat in categories %}
+          {% set acc = 'brand-turquoise' if cat.status == 'evaluated' else 'support-slate' %}
+          <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-4 overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-px bg-{{ acc }}/70"></div>
+            <div class="flex items-start justify-between mb-2 gap-2">
+              <div>
+                <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">{{ cat.title }}</div>
+                <div class="text-[11px] text-white/45 mt-0.5">{{ cat.subtitle }}</div>
+              </div>
+              {% if cat.status == 'evaluated' %}
+                <span class="text-[10px] px-1.5 py-0.5 bg-brand-turquoise/15 border border-brand-turquoise/35 text-brand-turquoise rounded-xs uppercase tracking-wide">Evaluated</span>
+              {% else %}
+                <span class="text-[10px] px-1.5 py-0.5 bg-support-slate/20 border border-white/10 text-white/55 rounded-xs uppercase tracking-wide">Pending</span>
+              {% endif %}
+            </div>
+            {% if cat.status == 'evaluated' %}
+              {% set ad_priv_findings = page_data.by_category.get('ad', []) %}
+              <div class="text-2xl font-bold text-white tabular-nums">{{ ad_priv_findings|length }}</div>
+              <div class="text-[11px] text-white/45 uppercase tracking-wide">finding{{ '' if ad_priv_findings|length == 1 else 's' }}</div>
+            {% else %}
+              <div class="text-2xl font-bold text-white/35 tabular-nums">—</div>
+              <div class="text-[11px] text-white/35 uppercase tracking-wide">Awaiting evidence</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      {# Mid row: control coverage donut (placeholder) + priority findings list #}
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+        {# Coverage donut — placeholder until full control catalog lands (Chunk E+) #}
+        <div class="bg-surface1 border border-divider rounded-card shadow-card p-5 flex flex-col items-center">
+          <div class="w-full flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-base font-semibold">Control coverage</h3>
+              <div class="text-[11px] text-white/45">Privileged-groups subset</div>
+            </div>
+            <span class="text-[10px] px-1.5 py-0.5 bg-support-amber/12 border border-support-amber/35 text-support-amber rounded-xs uppercase tracking-wide">Partial</span>
+          </div>
+          {% set evaluated = page_data.by_category|length %}
+          <div class="relative inline-flex items-center justify-center w-44 h-44 my-3">
+            <svg viewBox="0 0 100 100" class="absolute inset-0 -rotate-90">
+              <circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,0.08)" stroke-width="10" fill="none"/>
+              <circle cx="50" cy="50" r="42" stroke="#50bfa0" stroke-width="10" fill="none"
+                      stroke-dasharray="{{ 264 * 0.2 }} 264"/>
+            </svg>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-white tabular-nums">1<span class="text-base text-white/45 font-medium">/5</span></div>
+              <div class="text-[10px] uppercase tracking-wide text-white/45 mt-1">categories evaluated</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-divider w-full text-[12px]">
+            <div class="flex items-center justify-between"><span class="text-white/55">Tier 0 groups</span><span class="text-brand-turquoise tabular-nums">3</span></div>
+            <div class="flex items-center justify-between"><span class="text-white/55">Tier 0 members</span><span class="text-brand-turquoise tabular-nums">3</span></div>
+            <div class="flex items-center justify-between"><span class="text-white/55">Service accts</span><span class="text-support-amber tabular-nums">1</span></div>
+            <div class="flex items-center justify-between"><span class="text-white/55">Other cats</span><span class="text-white/35">pending</span></div>
+          </div>
+        </div>
+
+        {# Priority findings — for AD, this is just the AD-module findings #}
+        <div class="lg:col-span-2 bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+          <div class="px-5 py-3 border-b border-divider flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-semibold">Top findings</h3>
+              <div class="text-[11px] text-white/45">Sorted by risk score</div>
+            </div>
+            <a href="/findings" class="text-[12px] text-brand-turquoise/85 hover:text-brand-turquoise transition">All findings →</a>
+          </div>
+          {% if findings %}
+          <ul class="divide-y divide-divider">
+            {% for f in findings[:6] %}
+              {% set sev = severity_class.get(f.severity, 'support-slate') %}
+              <li>
+                <a href="/findings/{{ f.id }}" class="flex items-center gap-4 px-5 py-3 hover:bg-surface2/40 transition">
+                  <span class="inline-flex items-center gap-1.5 shrink-0">
+                    <span class="w-2 h-2 bg-{{ sev }} rounded-xs"></span>
+                    <span class="text-[10px] uppercase tracking-wide text-{{ sev }} font-bold w-14">{{ f.severity }}</span>
+                  </span>
+                  <div class="grow min-w-0">
+                    <div class="text-sm text-white truncate">{{ f.title }}</div>
+                    <div class="text-[11px] text-white/45 font-mono truncate">{{ f.category }}</div>
+                  </div>
+                  <div class="tabular-nums font-semibold text-white/85 shrink-0">{{ f.risk_score }}</div>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            <div class="px-5 py-8 text-center text-white/55 text-sm">No AD findings yet.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Privileged group identities table — the only "real" AD data in the slice #}
+      <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+        <div class="px-5 py-3 border-b border-divider">
+          <h3 class="text-base font-semibold">Privileged group membership (Tier 0)</h3>
+          <div class="text-[11px] text-white/45">From AD privileged-groups evidence. svc-backup is flagged as a service account.</div>
+        </div>
+        <div class="grid grid-cols-12 px-5 py-2.5 text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold border-b border-divider">
+          <div class="col-span-3">Identity</div>
+          <div class="col-span-2">Kind</div>
+          <div class="col-span-2">Tier 0</div>
+          <div class="col-span-5">SID</div>
+        </div>
+        {% set ad_evidence = (evidence | selectattr('evidence_type', 'eq', 'privileged-groups') | list)[0] if evidence else None %}
+        {% if ad_evidence %}
+          <ul class="divide-y divide-divider text-[13px]">
+            {% for group in ad_evidence.payload.get('groups', []) %}
+              {% for member in group.get('members', []) %}
+              <li class="grid grid-cols-12 px-5 py-2.5 items-center">
+                <div class="col-span-3 text-white truncate">{{ member.sam_account_name }}</div>
+                <div class="col-span-2">
+                  {% if member.is_service_account %}
+                    <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-support-amber/15 border border-support-amber/35 text-support-amber rounded-xs text-[10px] uppercase tracking-wide">Service account</span>
+                  {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-surface3/30 border border-white/10 text-white/65 rounded-xs text-[10px] uppercase tracking-wide">{{ member.kind }}</span>
+                  {% endif %}
+                </div>
+                <div class="col-span-2">
+                  <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-support-rose/15 border border-support-rose/35 text-support-rose rounded-xs text-[10px] uppercase tracking-wide">{{ group.name }}</span>
+                </div>
+                <code class="col-span-5 text-[10px] font-mono text-white/45 truncate">{{ member.sid }}</code>
+              </li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}

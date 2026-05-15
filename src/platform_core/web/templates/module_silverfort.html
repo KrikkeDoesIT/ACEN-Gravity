@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'silverfort' %}
+{% set active_module_id = 'silverfort' %}
+
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    {% with subtitle="Identity protection coverage view. Where does Silverfort enforce — and where are the gaps?" %}
+      {% include "components/module_header.html" %}
+    {% endwith %}
+
+    {% if not run or not evidence %}
+      {% with headline="No Silverfort evidence loaded yet",
+              body="POC accepts a manual Silverfort export bundle (per D-0006 — API connector is design-only). `gravity demo load` provides the Contoso fixture." %}
+        {% include "components/module_no_data.html" %}
+      {% endwith %}
+    {% else %}
+
+      {% set covered_count = page_data.covered_count or 0 %}
+      {% set uncovered_count = page_data.uncovered_count or 0 %}
+      {% set total_tier0 = covered_count + uncovered_count %}
+
+      {# Context strip — 3 status cards #}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+        {# Connector status — always 'pending' in POC #}
+        <div class="relative bg-surface1 border border-support-amber/30 rounded-card shadow-card p-5 overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-px bg-support-amber/70"></div>
+          <div class="flex items-center justify-between mb-1">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Connector</div>
+            <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-support-amber/15 border border-support-amber/35 text-support-amber rounded-xs">
+              <span class="w-1 h-1 bg-support-amber rounded-xs"></span>
+              <span class="text-[10px] uppercase tracking-wide font-bold">Pending</span>
+            </span>
+          </div>
+          <div class="mt-2 text-base font-semibold text-white">{{ page_data.tenant_name }}</div>
+          <div class="text-[11px] text-white/55 mt-1">Manual export mode · API design-only per D-0006</div>
+        </div>
+
+        {# Tier 0 coverage % #}
+        <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-px bg-support-violet/70"></div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Tier 0 coverage</div>
+          <div class="mt-2 flex items-baseline gap-2">
+            {% if total_tier0 %}
+              <span class="text-4xl font-bold tabular-nums text-white">{{ ((covered_count / total_tier0) * 100) | round | int }}<span class="text-base text-white/45">%</span></span>
+            {% else %}
+              <span class="text-4xl font-bold text-white/35">—</span>
+            {% endif %}
+          </div>
+          <div class="text-[11px] text-white/55 mt-2 tabular-nums">{{ covered_count }} of {{ total_tier0 }} privileged identities covered</div>
+        </div>
+
+        {# Coverage gaps #}
+        <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-px bg-support-rose/70"></div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Coverage gaps</div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-4xl font-bold tabular-nums {{ 'text-support-rose' if uncovered_count else 'text-white' }}">{{ uncovered_count }}</span>
+            <span class="text-sm text-white/45">Tier 0 uncovered</span>
+          </div>
+          <div class="text-[11px] text-white/55 mt-2">Linked to BH findings via CORR-BH-SF-001</div>
+        </div>
+      </div>
+
+      {# The page = CoverageMatrix (policy × target). This is the archetype's defining surface. #}
+      <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden mb-6">
+        <div class="px-5 py-3 border-b border-divider flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-semibold">Coverage matrix · privileged identities × Silverfort policies</h3>
+            <div class="text-[11px] text-white/45">Cell shows policy effect on that identity. Excluded cells are the gaps.</div>
+          </div>
+        </div>
+
+        {% if page_data.matrix %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-[13px]">
+            <thead>
+              <tr class="border-b border-divider text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold">
+                <th class="text-left px-5 py-3 sticky left-0 bg-surface1">Identity</th>
+                <th class="text-left px-3 py-3">Kind</th>
+                {% for p in page_data.policies %}
+                  <th class="text-left px-3 py-3 min-w-[200px]">
+                    <div class="text-white/85 normal-case tracking-normal text-[12px]">{{ p.name }}</div>
+                    <div class="flex items-center gap-1.5 mt-1">
+                      {% if p.enabled %}
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-brand-turquoise/15 border border-brand-turquoise/35 text-brand-turquoise rounded-xs">
+                          <span class="w-1 h-1 bg-brand-turquoise rounded-xs"></span>
+                          <span class="text-[9px] uppercase">Enabled</span>
+                        </span>
+                      {% else %}
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-support-slate/20 border border-white/10 text-white/55 rounded-xs">
+                          <span class="w-1 h-1 bg-support-slate rounded-xs"></span>
+                          <span class="text-[9px] uppercase">Disabled</span>
+                        </span>
+                      {% endif %}
+                      <span class="text-[10px] text-white/45 normal-case tracking-normal">{{ p.action }}</span>
+                    </div>
+                  </th>
+                {% endfor %}
+                <th class="text-center px-3 py-3 sticky right-0 bg-surface1">Overall</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-divider">
+              {% for row in page_data.matrix %}
+              <tr class="hover:bg-surface2/40 transition">
+                <td class="px-5 py-3 sticky left-0 bg-surface1 group-hover:bg-surface2/40">
+                  <div class="font-mono text-white/90 truncate max-w-[200px]">{{ row.target.label }}</div>
+                </td>
+                <td class="px-3 py-3">
+                  {% if row.target.kind == 'service_account' %}
+                    <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-support-amber/15 border border-support-amber/35 text-support-amber rounded-xs text-[10px] uppercase tracking-wide">Service account</span>
+                  {% else %}
+                    <span class="text-[12px] text-white/65">{{ row.target.kind }}</span>
+                  {% endif %}
+                </td>
+                {% for cell in row.cells %}
+                  <td class="px-3 py-3">
+                    {% if cell.status == 'covered' %}
+                      <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-brand-turquoise/12 border border-brand-turquoise/35 rounded-xs">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-brand-turquoise"><path d="m5 12 5 5 9-11"/></svg>
+                        <span class="text-[11px] uppercase tracking-wide text-brand-turquoise font-bold">Covered</span>
+                      </span>
+                    {% elif cell.status == 'excluded' %}
+                      <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-support-rose/12 border border-support-rose/35 rounded-xs">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-support-rose"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        <span class="text-[11px] uppercase tracking-wide text-support-rose font-bold">Excluded</span>
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center px-2 py-1 bg-surface3/20 border border-white/8 rounded-xs">
+                        <span class="text-[11px] uppercase tracking-wide text-white/35">—</span>
+                      </span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+                <td class="px-3 py-3 sticky right-0 bg-surface1 text-center">
+                  {% if row.overall == 'uncovered' %}
+                    <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-support-rose/15 border border-support-rose/40 rounded-xs">
+                      <span class="w-1.5 h-1.5 bg-support-rose rounded-xs"></span>
+                      <span class="text-[10px] uppercase tracking-wide text-support-rose font-bold">Gap</span>
+                    </span>
+                  {% elif row.overall == 'covered' %}
+                    <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-brand-turquoise/15 border border-brand-turquoise/40 rounded-xs">
+                      <span class="w-1.5 h-1.5 bg-brand-turquoise rounded-xs"></span>
+                      <span class="text-[10px] uppercase tracking-wide text-brand-turquoise font-bold">OK</span>
+                    </span>
+                  {% else %}
+                    <span class="text-[10px] uppercase tracking-wide text-white/35">n/a</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="px-5 py-10 text-center text-white/55 text-sm">No Tier 0 identities to render — load AD evidence first so identities exist.</div>
+        {% endif %}
+      </div>
+
+      {# Coverage-gap priority list — the SF findings #}
+      {% if findings %}
+      <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+        <div class="px-5 py-3 border-b border-divider flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-semibold">Coverage-gap findings</h3>
+            <div class="text-[11px] text-white/45">Where Silverfort would not block an authentication attempt</div>
+          </div>
+          <a href="/findings" class="text-[12px] text-brand-turquoise/85 hover:text-brand-turquoise transition">All findings →</a>
+        </div>
+        <ul class="divide-y divide-divider">
+          {% for f in findings %}
+            {% set sev = severity_class.get(f.severity, 'support-slate') %}
+            <li>
+              <a href="/findings/{{ f.id }}" class="flex items-center gap-4 px-5 py-3 hover:bg-surface2/40 transition">
+                <span class="inline-flex items-center gap-1.5 shrink-0">
+                  <span class="w-2 h-2 bg-{{ sev }} rounded-xs"></span>
+                  <span class="text-[10px] uppercase tracking-wide text-{{ sev }} font-bold w-14">{{ f.severity }}</span>
+                </span>
+                <div class="grow min-w-0">
+                  <div class="text-sm text-white truncate">{{ f.title }}</div>
+                  <div class="text-[11px] text-white/45 font-mono truncate">{{ f.category }}</div>
+                </div>
+                <div class="tabular-nums font-semibold text-white/85 shrink-0">{{ f.risk_score }}</div>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}

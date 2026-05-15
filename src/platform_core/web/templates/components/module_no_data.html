@@ -1,0 +1,9 @@
+<div class="bg-surface1 border border-divider rounded-card shadow-card p-10 text-center">
+  <div class="inline-flex items-center justify-center w-12 h-12 bg-{{ module.accent }}/15 border border-{{ module.accent }}/40 rounded-card mb-4">
+    <span class="w-2 h-2 bg-{{ module.accent }} rounded-xs"></span>
+  </div>
+  <h2 class="text-lg font-semibold">{{ headline or "No evidence loaded for this module" }}</h2>
+  <p class="text-white/55 mt-1 text-sm max-w-md mx-auto">
+    {{ body or "Load the Contoso Corp fixture (`gravity demo load`) or upload evidence via the AD toolkit ZIP / SharpHound ZIP / Silverfort export / Entra JSON dump." }}
+  </p>
+</div>

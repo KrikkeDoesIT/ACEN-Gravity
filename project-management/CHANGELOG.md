@@ -24,6 +24,118 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Stage 9 horizontal expansion — Chunk D (module pages with archetypes)
+
+Stage: 9.8 (horizontal expansion)
+By: Claude Code.
+
+Per `WORKING_APPROACH.md` §6 (no horizontal expansion until the slice is
+reviewed) and D-0018 (each module gets its own page archetype on a shared
+frame), this chunk turns the four dead side-nav links into real pages —
+**every** module is now navigable and renders its archetype-defining
+surface.
+
+Added — route + dispatcher
+- `src/platform_core/web/routes/modules.py` — `GET /modules/{module_id}`.
+  Loads the most-recent run, filters findings by `customer_visibility`
+  for non-consultant roles (defence-in-depth), assembles per-archetype
+  `page_data` (paths for BH, coverage matrix for SF, posture categories
+  for AD, license-aware placeholders for Entra), and renders the right
+  template. 404 on unknown module ids.
+
+Added — shared partials
+- `templates/components/module_header.html` — breadcrumb (Overview / Module
+  / Customer), accent-coloured module mark, archetype-label pill,
+  severity strip (one chip per severity present).
+- `templates/components/module_no_data.html` — accent-coloured empty state
+  with module-specific copy.
+
+Added — four archetype templates
+- **`module_ad.html` — Posture archetype**:
+  - 5 category status cards (Health / Privileged / Kerberos / Delegation /
+    GPO); only Privileged is "Evaluated" in the slice — others show a
+    "Pending" pill so the archetype's shape is visible.
+  - Control-coverage donut (placeholder until the full control catalog
+    lands — 1/5 categories evaluated; svc-backup flagged as service
+    account in the mini-stats).
+  - Top-findings priority list with link-through to `/findings/{id}`.
+  - Privileged-group membership table (real data from the AD parser:
+    Domain Admins / Enterprise Admins / Domain Controllers + their
+    members).
+- **`module_bloodhound.html` — Attack-path archetype**:
+  - 3 context KPIs (Tier 0 reachable, Top category, Graph size). **No
+    control-coverage ring** — paths are the unit per D-0018.
+  - Ranked critical paths list (the page's defining surface): rank,
+    severity pill, category, hops, inline path-step preview, risk
+    score, click-through to the BH finding's detail.
+  - Per-row mini path renders the full chain inline so consultants can
+    scan paths at a glance without opening each finding.
+- **`module_silverfort.html` — Coverage archetype**:
+  - 3 context KPIs (Connector status — always Pending in POC per D-0006,
+    Tier 0 coverage %, Coverage gaps count).
+  - **`CoverageMatrix`** — sticky-left identity column × policy columns
+    × cells (Covered / Excluded / n.a.) + sticky-right Overall column
+    (OK / Gap / n.a.). Excluded cells are the actionable rows.
+  - Coverage-gap finding list at the bottom (links to SF-AD-001).
+- **`module_entra.html` — License-aware tenant config archetype**:
+  - 6 placeholder cards (Licensing & Capability / Conditional Access /
+    Privileged Roles / Authentication Methods / Apps & Service
+    Principals / Hybrid Identity) — each carries a `LicenseBadge`
+    showing `Unknown` until the Entra parser lands.
+  - Opportunity card placeholder explaining the License-aware story
+    (D-0008: `not_licensed` never reduces the Current License Score).
+  - No-data state at the bottom.
+
+Side-nav
+- `components/side_nav.html` — module links now point to
+  `/modules/{module_id}` with the matching module's accent on the
+  active pill (Turquoise / Rose / Violet / Sky). `active_module_id` and
+  `active_nav` both supported so pages can set either marker.
+
+Tests
+- `tests/test_slice_chunk_d.py` — 10 tests:
+  - Route plumbing: redirect when no persona; 404 on unknown module;
+    pages render the no-data state on an empty DB.
+  - AD: posture category names + privileged-membership table render
+    real identities (svc-backup, it.admin.kristof, Domain Admins),
+    service-account flag visible, archetype label rendered.
+  - BloodHound: "Attack-path archetype" label, Tier 0 reachable KPI,
+    ACL abuse category, GenericAll / MemberOf edge labels in the inline
+    preview, Domain Admins target, graph-size KPI (nodes/edges).
+  - Silverfort: Coverage archetype label, Pending connector pill,
+    CoverageMatrix renders Tier 0, Excluded/Gap markers, coverage %
+    computed, svc-backup gap visible.
+  - Entra: License-aware label, six placeholder cards (Jinja-escaped
+    `&amp;`), Opportunity card placeholder, no-data state.
+  - Side-nav: every module link is `/modules/{id}`; active pill applies
+    to the right module (Silverfort gets `bg-support-violet/15` when
+    active).
+  - Role visibility: customer roles can hit the pages too (chrome is
+    shared; finding visibility is filtered at the route level).
+
+Verified
+- `pytest -q` → **46 passed** (9 smoke + 9 A + 9 B + 9 C + 10 D).
+- `ruff check src tests` → clean. Per-file ignore added for the four
+  archetype builder functions in `modules.py` (they keep a uniform
+  signature even when not all params are used yet).
+- Live HTTP probe: every module page returns 200; full demo journey
+  still passes end-to-end.
+
+Tasks moved
+- T-9020 (route + dispatcher), T-9021 (AD page), T-9022 (BH page),
+  T-9023 (SF page), T-9024 (Entra page), T-9025 (side-nav wiring) → done.
+
+Decisions: none new — D-0018 (archetypes) realised in code.
+
+Recommended next step
+- **Chunk E — Entra module (parser + manifest + license-aware controls +
+  real data on the Entra page)**: this completes the 4-module promise
+  from `POC_V1_SCOPE.md` and unlocks the second cross-module correlation
+  story (BH path → hybrid admin overlap). Also realistic for the
+  management Cycle 7 demo to have all four modules actually populated.
+
+---
+
 ## 2026-05-15 — Stage 9 vertical slice — Chunk C (Silverfort + correlation + HTML report)
 
 Stage: 9.0 (vertical slice — Chunk C of 3) — **slice complete**, awaiting T-9012 review
