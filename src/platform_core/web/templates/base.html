@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ page_title or "ACEN Gravity" }} · ACEN Gravity</title>
+
+  {# Tailwind via Play CDN — POC only (D-0020). Swap to standalone CLI before component-library work. #}
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  {# Alpine.js for small interactions (dropdown menus, drawers). Per WORKING_APPROACH.md §14 stack. #}
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script>
+    // Brand + supporting palette, mapped from UI_DESIGN_DIRECTION.md §2.1.
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // Brand (ACEN 2025 Huisstijlgids) — anchors
+            brand: {
+              jakarta:   "#201e5c",
+              bunting:   "#1b1b4c",
+              minsk:     "#2d2d72",
+              gulf:      "#000162",
+              gallery:   "#eaeaea",
+              mercury:   "#e0e0e0",
+              trinidad:  "#fd5400",
+              turquoise: "#50bfa0",
+              dorado:    "#595959",
+            },
+            // Supporting palette (D-0021) — used only in defined roles
+            support: {
+              indigo: "#6366f1",
+              violet: "#a78bfa",
+              sky:    "#38bdf8",
+              rose:   "#fb7185",
+              amber:  "#f59e0b",
+              slate:  "#64748b",
+            },
+            // Neutral shade scale (D-0023) — cool dark greys with a 2% blue tint.
+            // UI chrome uses these. Brand blue is reserved for brand moments.
+            shade: {
+              950: "#08080d",
+              900: "#0e0e15",
+              850: "#13131c",
+              800: "#1a1a23",
+              750: "#22222e",
+              700: "#2a2a36",
+              600: "#363645",
+              500: "#4a4a5c",
+            },
+            // Derived surfaces — now neutral, NOT brand-blue (D-0023)
+            bg:        "#0a0a12",
+            bgSoft:    "#13131c",
+            surface1:  "#1a1a23",
+            surface2:  "#22222e",
+            surface3:  "#2a2a36",
+            divider:   "rgba(255,255,255,0.07)",
+            // Status tokens
+            statusOk:       "#50bfa0",
+            statusWarn:     "#f59e0b",
+            statusCritical: "#fd5400",
+            statusNeutral:  "#e0e0e0",
+            statusInfo:     "#6366f1",
+          },
+          fontFamily: {
+            sans: ['Montserrat', 'Aptos', 'system-ui', 'sans-serif'],
+          },
+          borderRadius: {
+            none:    "0",
+            xs:      "2px",
+            control: "6px",
+            card:    "10px",
+          },
+          boxShadow: {
+            card:    "0 1px 0 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4)",
+            cardLg:  "0 1px 0 0 rgba(255,255,255,0.05) inset, 0 12px 32px -8px rgba(0,0,0,0.6)",
+          },
+          backgroundImage: {
+            // Neutral dark backdrop with two soft accent halos (turquoise top-right, rose bottom-left).
+            'app-backdrop': 'radial-gradient(1200px 600px at 85% -10%, rgba(80,191,160,0.07), transparent 60%), radial-gradient(900px 500px at -10% 100%, rgba(251,113,133,0.04), transparent 60%), linear-gradient(180deg, #13131c 0%, #0a0a12 100%)',
+            // Subtle card top-light, mimics depth without glow
+            'card-sheen': 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 40%)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body class="min-h-screen bg-app-backdrop text-white font-sans antialiased">
+  {% if app_env == "development" %}
+  <div class="w-full bg-brand-trinidad/10 border-b border-brand-trinidad/30 text-brand-trinidad text-[11px] px-4 py-1 text-center tracking-widest uppercase">
+    POC build · synthetic data only · not for customer use
+  </div>
+  {% endif %}
+
+  {% block layout %}
+    {{ self.content() }}
+  {% endblock %}
+</body>
+</html>

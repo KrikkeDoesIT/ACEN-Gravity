@@ -86,11 +86,11 @@
 
 | ID | Tier | Owner | Status | Task |
 |---|---|---|---|---|
-| T-6001 | POC | DEV | todo | Initialize Python project (pyproject.toml, ruff, mypy, pytest) |
-| T-6002 | POC | DEV | todo | FastAPI app scaffolding + Jinja2 + Tailwind build pipeline (no Node SPA) |
-| T-6003 | POC | DEV | todo | PostgreSQL + Alembic baseline migration (empty schema — no models yet) |
-| T-6004 | POC | DEV | todo | Folder layout per `MODULE_ARCHITECTURE.md` (`platform_core/`, `modules/{ad,bloodhound,silverfort,entra}/`) |
-| T-6005 | POC | DEV | todo | Simple role-switching "login" (no real auth) per A-0013 |
+| T-6001 | POC | DEV | done    | Initialize Python project (pyproject.toml, ruff, mypy, pytest) |
+| T-6002 | POC | DEV | done    | FastAPI app scaffolding + Jinja2 + Tailwind (Play CDN — switch to standalone CLI before MVP) |
+| T-6003 | POC | DEV | blocked | PostgreSQL + Alembic baseline migration (empty schema — no models yet) — **blocked on WSL2 / Virtual Machine Platform** |
+| T-6004 | POC | DEV | done    | Folder layout per `MODULE_ARCHITECTURE.md` (`src/platform_core/`, `src/modules/{ad,bloodhound,silverfort,entra}/`) |
+| T-6005 | POC | DEV | done    | Simple role-switching "login" (no real auth) per A-0013 — Persona enum + session middleware + login/logout routes + 9 smoke tests |
 
 ### 8.2 Sample data plan
 
@@ -231,6 +231,14 @@
 ## Post-Stage 9 — MVP preparation
 
 Not in scope yet. Placeholder for when POC sign-off (Cycle 9) approves moving toward MVP.
+
+## Future / Full Product backlog stubs
+
+> Captured here so they are not forgotten. **None of these enter the POC backlog.** They land on the Full Product roadmap.
+
+| ID | Tier | Owner | Status | Task |
+|---|---|---|---|---|
+| T-F001 | Full | PO + UX + SA | future | **Per-customer co-branding** — `Customer.brand` JSONB (`{logo_url, primary, secondary1, secondary2}`); theme injection only in customer-facing chrome + Customer Summary report; never overrides status colours or module category colours; consultant view never themed. Q-0151 first; Q-0101 sequenced before. Contrast check + status-collision detection + logo asset constraints designed at that stage. |
 
 ---
 

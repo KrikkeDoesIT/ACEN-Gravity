@@ -1,8 +1,8 @@
 # UI_DESIGN_DIRECTION.md
 
-> Design language and **reusable component library** for ACEN Gravity. Built so every module reuses the same components and the platform feels calm, executive, and on-brand.
+> Design language and **reusable component library** for ACEN Gravity. Built so every module reuses the same atoms and the platform feels calm, executive, and on-brand — while each module's body is free to reflect what it is fundamentally about (paths for BloodHound, coverage for Silverfort, posture for AD, license-aware tenant config for Entra).
 >
-> This document is **component-led** by design (per Kristof's direction): we define the component library first, then compose pages from it. Modules do not invent new UI patterns.
+> This document is **component-led** by design (per Kristof's direction): we define a shared component library first, then compose **module-specific page archetypes** from it. New components are allowed when a pattern earns its place in the library.
 >
 > Companion: `VISUAL_REFERENCES.md` (HTB, Fortify360, Runtime), ACEN 2025 brand guide (OneDrive), `PRODUCT_DESIGN.md` §27, `MODULE_ARCHITECTURE.md`.
 
@@ -10,9 +10,24 @@
 
 ## 1. Design goal
 
-> **One coherent, calm, executive-grade workspace where the same five components carry 80% of every screen, mapped to the ACEN brand, and never feels like a SIEM.**
+> **One coherent, calm, executive-grade workspace where the *frame* and the *atoms* are identical across modules, but each module's *body* reflects what it actually shows.**
 
-A user landing on the AD page, the Entra page, or the Silverfort page should see the *same patterns* — same stat cards, same priority list, same drawer, same chart treatments — only the data and the icons change. This is what makes the platform feel like one product, not four dashboards (R-0002).
+The shell, header, side nav, finding drawer, publish modal, evidence drawer, status badges, and primary atoms are the same on every screen — that is what makes the platform feel like one product, not four dashboards (R-0002).
+
+What is *not* the same is the **page body composition**: paths-led for BloodHound, coverage-led for Silverfort, posture-led for AD, license-aware-led for Entra. Forcing identical bodies would lose important domain affordances; we explicitly **do not** do that.
+
+### The two layers
+
+| Layer | Identical across modules? | Examples |
+|---|---|---|
+| **Frame** (shell, nav, header, breadcrumb, drawer/modal, finding detail, evidence drawer, publish flow, audit log) | ✅ identical | `AppShell`, `AppHeader`, `SideNav`, `Drawer`, `Modal`, finding-detail content, publish modal |
+| **Atoms** (button, input, card, status badge, chip, ring, KPI, priority row, table row, divider) | ✅ identical | every component in §3 |
+| **Module-specific compositions** (page-body archetypes) | ⛔ deliberately different | "Posture" (AD), "Attack-path" (BH), "Coverage" (SF), "License-aware tenant config" (Entra) — see §4.3 |
+| **Module-specific named components** (built from atoms, owned by a module, registered in the library) | ⛔ different but **shared library** | `PathStepList` (BH), `CoverageMatrix` (SF), `LicenseBadge` (Entra) |
+
+### The rule
+
+> **Same atoms. Same frame. Module-specific compositions. New components are allowed when a pattern repeats or matters enough — they enter the shared library so future modules can reuse them.**
 
 ---
 
@@ -35,24 +50,81 @@ Tokens are the single source of truth. Components reference tokens, never raw he
 | `--brand-turquoise` | `#50bfa0` | Turquoise | Positive / "ok" / secondary accent |
 | `--brand-dorado` | `#595959` | Dorado | Body text on light; muted text on dark surfaces |
 
+#### Neutral shade scale (D-0023)
+
+UI **chrome** (surfaces, cards, dividers) uses a neutral shade scale, **not** brand-blue. Brand blues are reserved for **brand moments** (logo lockup, login splash, occasional chart series). This keeps the platform calm and makes brand colour meaningful where it appears.
+
+| Token | Hex | Use |
+|---|---|---|
+| `shade-950` | `#08080d` | Deepest backdrop |
+| `shade-900` | `#0e0e15` | App background base |
+| `shade-850` | `#13131c` | App background top |
+| `shade-800` | `#1a1a23` | Card surface (`surface-1`) |
+| `shade-750` | `#22222e` | Hover / active / drawer (`surface-2`) |
+| `shade-700` | `#2a2a36` | Dividers / sub-surfaces (`surface-3`) |
+| `shade-600` | `#363645` | Stronger borders |
+| `shade-500` | `#4a4a5c` | Muted text on dark |
+
 Derived tokens used by components:
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#0e0e2e` (derived darker than Bunting) | App background (dark theme baseline) |
-| `--surface-1` | `--brand-bunting` | Card |
-| `--surface-2` | `--brand-jakarta` | Active nav / hovered card |
-| `--surface-3` | `--brand-minsk` | Dividers, sub-surfaces |
+| `--bg` | `#0a0a12` (neutral dark, slight blue tint) | App background (dark theme baseline) |
+| `--bg-soft` | `#13131c` | App background top of vertical gradient |
+| `--surface-1` | `shade-800` `#1a1a23` | Card |
+| `--surface-2` | `shade-750` `#22222e` | Active nav / hovered card |
+| `--surface-3` | `shade-700` `#2a2a36` | Dividers, sub-surfaces |
 | `--text` | `--brand-white` | Primary text on dark |
 | `--text-muted` | `--brand-gallery` | Secondary text |
 | `--text-subtle` | `rgba(234,234,234,0.6)` | Tertiary text on dark |
-| `--border` | `rgba(255,255,255,0.08)` | Card borders, dividers |
+| `--border` | `rgba(255,255,255,0.07)` | Card borders, dividers |
+
+**Brand moments** (where brand-blue is the right choice):
+- Brand mark / logo (`brand-gulf` base, with `brand-turquoise` / `support-violet` mix-blend overlay).
+- Login left splash pane: `from-brand-bunting via-brand-jakarta to-brand-gulf` gradient — the platform's identity surface.
+- Optional chart series colour when "ACEN" itself is being charted.
+- "ACEN" wordmark in the header / login.
+
+**Rule:** if a brand-blue is in chrome (header bg, side nav bg, card bg, modal bg, drawer bg, page bg), the chrome has slipped off-spec and should be reverted to a `shade-*` token. D-0023.
 | `--accent` | `--brand-turquoise` | **Default primary action** (calmer than Trinidad) |
 | `--accent-critical` | `--brand-trinidad` | **Critical states + destructive actions** only |
 | `--status-ok` | `--brand-turquoise` | OK badges |
 | `--status-warn` | `#f6a623` (derived ACEN amber) | Warning badges (open question Q-0111-related) |
 | `--status-critical` | `--brand-trinidad` | Critical badges |
 | `--status-neutral` | `--brand-mercury` | Pending / unknown badges |
+
+#### Supporting palette (added 2026-05-15, per D-0021)
+
+The brand palette is deep-blue dominant with two accents. That is enough for the *frame* but not for module identity, data visualization, or nuanced status. We introduce a **supporting palette** alongside the brand tokens. Brand tokens remain the anchor; supporting tokens are used **only in defined roles** so the platform does not slide into rainbow.
+
+| Token | Hex | Role | Allowed uses |
+|---|---|---|---|
+| `--support-indigo` | `#6366f1` | Data viz primary; "info" state | Chart series 1; info badges; chart axes accent |
+| `--support-violet` | `#a78bfa` | Module category — Silverfort; chart series 2 | SF nav icon dot, SF page accent stripe; second chart series |
+| `--support-sky` | `#38bdf8` | Module category — Entra; chart series 3 | Entra nav icon dot, Entra page accent stripe; third chart series |
+| `--support-rose` | `#fb7185` | Module category — BloodHound; "high" severity tint | BH nav icon dot, BH page accent stripe; high (not critical) severity dots |
+| `--support-amber` | `#f59e0b` | `--status-warn` formalized | Warning badges, "action required" states |
+| `--support-slate` | `#64748b` | Muted neutrals on dark | Disabled controls, table dividers, captions |
+
+**Module category colour map**
+
+| Module | Category colour | Token |
+|---|---|---|
+| Active Directory | brand Turquoise (foundational; uses the brand colour) | `--brand-turquoise` |
+| BloodHound | Rose | `--support-rose` |
+| Silverfort | Violet | `--support-violet` |
+| Entra | Sky | `--support-sky` |
+
+> AD uses the brand Turquoise as its category colour deliberately — AD is the platform's foundational module, and the brand colour signals that. The other three modules get supporting colours so the four are visually distinct in the side-nav, on the overview, and in the report.
+
+**Chart series order** (deterministic across all charts): Turquoise → Indigo → Violet → Sky → Rose → Amber → Slate. Never rainbow; never more than 4 series in a chart per `UI_DESIGN_DIRECTION.md` §2.6 (charts).
+
+**Strict rules**
+
+- **Trinidad and Turquoise remain the brand anchors.** Trinidad = critical/destructive only (§2.4). Turquoise = default primary action + AD module + "ok" status.
+- Supporting tokens **never** replace brand tokens in chrome (nav, header, page background, primary buttons).
+- A surface using a supporting token (e.g., the SF page accent stripe) is **always paired** with brand chrome so the page still reads as ACEN.
+- New supporting tokens require an architecture/UX review entry in `REVIEW_NOTES.md` — we do not extend the palette by accident.
 
 ### 2.2 Typography
 
@@ -70,10 +142,13 @@ Derived tokens used by components:
 ### 2.3 Spacing and radius
 
 - Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 px.
-- Border-radius:
-  - **Non-interactive frames:** 0 (square, per ACEN brand).
-  - **Interactive controls (button, input, card, badge, chip, drawer header):** 2 px (D-0010 digital adaptation).
-  - **Rings (donut/ring charts):** circle.
+- Border-radius (D-0022, amends D-0010):
+  - **Brand-strict frames** (logo lockup, brand-mark geometry, decorative shapes): **0 px** (square, per ACEN brand).
+  - **Small elements** (badges, status pills, severity dots, tooltips, table cells): **`rounded-xs` = 2 px**.
+  - **Interactive controls** (button, input, select, chip, segmented control): **`rounded-control` = 6 px**.
+  - **Cards / drawers / modals / hero containers / action panels**: **`rounded-card` = 10 px**.
+  - **Rings (donut / ring charts):** circle.
+- Pending brand-owner confirmation at Cycle 4 review (Q-0110 extended).
 
 ### 2.4 Trinidad orange — restraint
 
@@ -294,13 +369,27 @@ Variants:
 #### `Toolbar`
 - Filter chip set + search + sort dropdown for list pages (Findings workspace).
 
-### 3.5 Module-specific composition (no new components)
+### 3.5 Module-specific compositions and components
 
-A module page is composed strictly from the components above. Module-specific touches:
+Module pages are **not** forced into an identical body. They share the **frame** (shell, nav, header, drawer, modal, finding-detail, evidence drawer, publish flow) and the **atoms** above, then compose a body that reflects what each module is fundamentally about.
 
-- Module icon (in side-nav and module page header).
-- Module-specific data inside generic components (e.g., BloodHound `PriorityList` row shows path category + length + risk score).
-- BloodHound page may include a small **graph stub** (path step list rendered as a vertical chain — *not* a free-form graph canvas in POC). This is a `PathStepList` micro-component, defined once and reusable.
+#### Module-specific touches at the page level
+- Module icon (side-nav + module page header).
+- Module-specific data inside generic atoms (e.g., BloodHound `PriorityList` row shows path category + length + risk score; Silverfort `PriorityList` row shows coverage gap + affected count).
+- A **page archetype** per module — see §4.3 for the four POC archetypes.
+
+#### Module-specific named components (in the shared library)
+
+When a pattern recurs inside a module or matters enough domain-wise, it gets its own named component, **registered in the shared library** so future modules can adopt it. These are first-class components, not one-off snippets.
+
+| Component | Owner | Purpose | Used on |
+|---|---|---|---|
+| `PathStepList` | BloodHound | Vertical chain of identity → edge-type → identity → ... with severity colour per edge. Replaces a free-form graph canvas in POC. | BH module page + Finding drawer for BH findings |
+| `CoverageMatrix` | Silverfort | Grid view: rows = covered targets (privileged groups, Tier 0 assets, service accounts), columns = policies, cells = covered / excluded / gap (with hover detail). | SF module page; reusable by future modules with policy-to-target coverage patterns (e.g., Defender XDR coverage). |
+| `LicenseBadge` | Entra (+ Silverfort) | Compact badge variant of `StatusBadge` that surfaces all 8 license_status values consistently, with a tooltip explaining the SKU/capability gap. | Anywhere a control or finding carries a license status (Entra page, SF page, Finding drawer, Reports). |
+| `CapabilityTooltip` | Entra | The tooltip body invoked from `LicenseBadge`. Explains *which* SKU is required and *why* it does not affect the Current License Score. | Triggered by `LicenseBadge`. |
+
+**Rule for promoting a one-off into a named component:** if the same pattern appears in a second module *or* is on the demo journey, it gets named, documented in this section, and added to the component-library deliverable (§20). One-off micro-bits stay inside `modules/<module>/ui/` and do not graduate.
 
 ### 3.6 Action panels
 
@@ -330,16 +419,89 @@ Five page templates carry the platform. Module pages reuse template `M`.
 - Row 3: `RingChart` (control coverage) + `PriorityList` (Top findings) + `RiskBarList` (severity distribution).
 - Right rail: optional `ActionPanel` (Quick actions: Upload evidence, Generate report).
 
-### 4.3 `M` — Module page (AD / BloodHound / Silverfort / Entra)
-- `PageHeader`: module name + supporting sentence + secondary actions (Upload evidence · Re-evaluate).
-- Row 1: 4–5 `StatusCard` (one per category in the module).
-- Row 2: `RingChart` (control coverage) + `PriorityList` (Top findings in this module).
-- Row 3 (optional, module-specific):
-  - AD: `Table` of privileged groups + a `RiskBarList` (Tier 0 reachability).
-  - BloodHound: `RankedList` of critical paths + per-path step preview.
-  - Silverfort: `StatusCard` row for connector / policy / enrollment.
-  - Entra: `StatusCard` row for license-aware (License & Capability) + CA coverage.
-- Right rail: optional `ActionPanel` for module-specific actions.
+### 4.3 Module page archetypes
+
+Each module gets a **page archetype** that fits its domain. All archetypes use the same `AppShell`, `AppHeader`, `SideNav`, `PageHeader`, `Drawer`, `Modal`, `Toolbar`, and `Finding detail drawer`. What differs is the **body composition** — and that is deliberate.
+
+The four POC archetypes:
+
+| Module | Archetype | Body is led by | Why this body |
+|---|---|---|---|
+| AD | **Posture** | Categorical status cards + control-coverage ring + priority findings | AD is a *configuration baseline* problem — every category (Health, Privileged, Kerberos, Delegation, GPO) is a posture surface scored against the baseline. |
+| BloodHound | **Attack-path** | Ranked paths list + path-detail drawer with `PathStepList` | BH is a *graph / path* problem. The natural unit is a critical path, not a control. Findings are paths. |
+| Silverfort | **Coverage** | `CoverageMatrix` (policy × target) + coverage-gap priority list | SF is a *coverage* problem — the question is "what is *not* protected?". A matrix shows it directly. |
+| Entra | **License-aware tenant config** | License-aware status cards (with `LicenseBadge`) + finding list | Entra is fundamentally license-gated. Every card must surface ownership + configuration state simultaneously. |
+
+> **The frame is the same on all four.** Only the body composition differs. The same `Card`, `StatusBadge`, `PriorityList`, `Button`, `Drawer`, `Finding detail`, and `Publish modal` are used on every page.
+
+#### 4.3.1 AD — *Posture* archetype
+
+- `PageHeader`: "Active Directory · {customer name}" · supporting sentence · secondary actions (Upload evidence · Re-evaluate · Open PingCastle XML).
+- Row 1: 4–5 `StatusCard` — Health · Privileged · Kerberos · Delegation · GPO (per `AD_MODULE_DESIGN.md`).
+- Row 2 (split):
+  - Left: `RingChart` (control coverage — pass / partial / fail / not-applicable / unknown).
+  - Right: `PriorityList` (top AD findings ranked by risk score).
+- Row 3 (optional, posture detail):
+  - `Table` of privileged group membership (Domain Admins / Enterprise Admins / Schema Admins / built-in / krbtgt / Cert Publishers) with counts and a "Tier 0 reachability" `RiskBarList`.
+- Right rail (optional): `ActionPanel` — Upload AD toolkit ZIP · Upload PingCastle XML.
+
+This is the closest archetype to "the original M template". It works because AD genuinely *is* a multi-category posture view.
+
+#### 4.3.2 BloodHound — *Attack-path* archetype
+
+- `PageHeader`: "BloodHound · Attack Paths" · supporting sentence (e.g., "Top 5 critical paths to Tier 0") · secondary actions (Upload SharpHound ZIP · Re-analyze).
+- Row 1 (context, kept lean — 3 `StatusCard`):
+  - Tier 0 reachable from N source identities.
+  - Top path category (e.g., "ACL abuse — 4 paths").
+  - Highest single risk score on the run.
+- Row 2 (the page): **Ranked critical paths list** — dominant column. Each row uses a `RankedList`-style row with: rank · source identity (avatar + label) · → · target (Tier 0 label) · path category badge · length · risk score · severity dot. Click → opens path drawer.
+- Row 3 (optional, secondary): `RiskBarList` (paths by category).
+- Path detail drawer: `PathStepList` showing each node + edge type + edge severity colour, plus the deterministic explanation template rendered as prose, plus correlation chips (AD finding / SF coverage / Entra hybrid admin).
+
+No control-coverage ring on this page — controls are not the unit. The unit is **the path**.
+
+#### 4.3.3 Silverfort — *Coverage* archetype
+
+- `PageHeader`: "Silverfort · Identity Protection Coverage" · supporting sentence · connector `StatusBadge` (in POC always `pending` "Connector not configured (POC)" with explanation tooltip).
+- Row 1 (context — 3 `StatusCard`): Privileged coverage % · Service-account coverage % · Enrollment completeness %.
+- Row 2 (the page): **`CoverageMatrix`** — dominant. Rows = covered targets (Tier 0 group, Domain Admins, kerberoastable service accounts, ...); Columns = SF policies; Cells = `covered` (green) / `excluded` (amber) / `not_covered` (red, the gap) / `n/a`. Hover surfaces policy details, source rows surface affected identities.
+- Row 3: **Coverage-gap priority list** — `PriorityList` ordered by severity, each row pointing back into the matrix and (when present) into a correlated BH path.
+- Right rail (optional): `ActionPanel` — Upload manual export bundle.
+
+The matrix replaces a control-coverage ring because *coverage* is the central question; rings would summarize away the answer.
+
+#### 4.3.4 Entra — *License-aware tenant config* archetype
+
+- `PageHeader`: "Entra ID · {tenant}" · supporting sentence noting the SKU profile (e.g., "E3 + standalone Entra ID P1 · no P2") · secondary actions (Upload Entra Graph bundle · Re-evaluate).
+- Row 1: 6 `StatusCard`, each with a `LicenseBadge` in the top-right (variants from the 8-value enum):
+  - Licensing & Capability detection
+  - Conditional Access
+  - Privileged Roles (incl. PIM where licensed)
+  - Authentication Methods
+  - Apps & Service Principals
+  - Hybrid Identity
+- Row 2 (split):
+  - Left: `RingChart` (Entra control coverage).
+  - Right: `PriorityList` of Entra findings — each row shows a `LicenseBadge` so the reader sees license context at-a-glance.
+- Row 3 (optional): **Opportunity card** — top 3 capabilities the customer does not own that would close the largest score gap, with `CapabilityTooltip` explaining each.
+- Right rail: collapsed in POC; reserved for license-catalog override at MVP.
+
+This archetype is what makes the demo's license-aware story land: every card answers "do they own it?" *and* "are they using it?".
+
+#### Shared frame on every module page
+
+Independent of archetype, every module page has:
+
+- The same `AppShell`, `AppHeader`, breadcrumbs, side nav with active pill.
+- The same upload affordance (`FileDropzone` triggered from secondary actions).
+- The same `Toolbar` shape when filters are present.
+- The same `Drawer` for finding detail.
+- The same `Modal` for publishing.
+- The same `Evidence drawer` accessible from any finding.
+- The same audit log surface.
+- The same `LicenseBadge`, `StatusBadge`, severity dots, severity colours, and typography.
+
+The platform reads as **one product**, with each module page **clearly tailored to what it shows**.
 
 ### 4.4 `F` — Findings workspace
 - `PageHeader`: "Findings" + count.
@@ -381,6 +543,9 @@ Other supporting pages: Audit, Customer page, Engagement page, Assessment-run pa
 | 18. Hero card | `HeroCard` | Empty states |
 | 19. Numbered ranked list | `RankedList` | O (Top findings), M (BH paths) |
 | 20. Dropdown select on dark | `Select` | All |
+| 21. Vertical attack-path chain (node → edge → node) | **`PathStepList`** | BH page, Finding drawer (for BH findings) |
+| 22. Policy × target coverage grid | **`CoverageMatrix`** | SF page; reusable by future modules with coverage patterns |
+| 23. License-aware status badge with capability tooltip | **`LicenseBadge`** + **`CapabilityTooltip`** | Entra page, SF page, Finding drawer, Reports |
 
 ---
 
@@ -531,7 +696,8 @@ A free-form graph canvas is **not in POC**. If management asks, the answer is "M
 |---|---|
 | Endless scrolling module pages | Fixed-height cards with internal scroll |
 | KPI rows of 8+ cards | Cap at 5 |
-| Per-module custom UI components | Reuse the library; module-specific micro-components go in `modules/<m>/ui/` |
+| Per-module bespoke UI primitives (re-implementing a button, a card, a badge per module) | Reuse the library atoms; module-specific named components like `PathStepList` / `CoverageMatrix` / `LicenseBadge` are **welcome** but they live in the shared library (§3.5), not inside `modules/<m>/ui/` in a hidden way |
+| Forcing identical body layouts across all module pages | Embrace **module-specific archetypes** (§4.3): Posture / Attack-path / Coverage / License-aware tenant config |
 | Trinidad on every CTA | Reserve Trinidad for criticals (§2.4) |
 | Heavy outer glow on cards (Reference C edges) | Subtle border + 1 px shadow at most |
 | Multi-row tab bars | One row max; otherwise restructure |

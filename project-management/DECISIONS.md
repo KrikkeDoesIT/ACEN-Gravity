@@ -175,4 +175,124 @@ Linked: `WORKING_APPROACH.md` §15, `REVIEW_NOTES.md`.
 
 ---
 
-*Last updated: 2026-05-15 — D-0012 … D-0017 added for the 9-stage operating-model update.*
+### D-0018 — Module pages use module-specific archetypes built on a shared frame + shared atoms
+Date: 2026-05-15
+Status: proposed (supersedes part of the previous "all module pages share the same layout" guidance in `UI_DESIGN_DIRECTION.md` §1, §3.5, §4.3)
+Owner: Claude Code (UX role) + Kristof
+Context: The earlier UI direction stated that AD, BloodHound, Silverfort, and Entra pages should reuse the **same body layout** with only different data. Kristof pushed back: the four modules show fundamentally different things (configuration baseline vs attack paths vs coverage matrix vs license-aware tenant config), and forcing identical bodies loses important domain affordances. The principle "reusable components" does not require "identical pages".
+Decision: Adopt a **two-layer UI model**:
+- **Frame and atoms are identical across modules** — `AppShell`, `AppHeader`, `SideNav`, `Drawer`, `Modal`, finding-detail, evidence drawer, publish flow, `Card`, `StatusBadge`, `Button`, `Input`, `Select`, `PriorityList`, `KpiCard`, `Toolbar`. Same on every page.
+- **Module-specific archetypes** drive the page body:
+  - AD = **Posture archetype** — categorical status cards + control-coverage ring + priority findings.
+  - BloodHound = **Attack-path archetype** — ranked critical paths dominant + `PathStepList` drawer.
+  - Silverfort = **Coverage archetype** — `CoverageMatrix` dominant + coverage-gap priority list.
+  - Entra = **License-aware tenant config archetype** — license-aware status cards (with `LicenseBadge`) + finding list + Opportunity card.
+- **Module-specific named components** (`PathStepList`, `CoverageMatrix`, `LicenseBadge`, `CapabilityTooltip`) are first-class members of the shared library, not hidden in module folders. The promotion rule: if a pattern appears in a second module *or* is on the demo journey, it gets named, documented in `UI_DESIGN_DIRECTION.md` §3.5, and added to the component-library deliverable.
+Consequences:
+- `UI_DESIGN_DIRECTION.md` §1 (design goal), §3.5 (module-specific components), §4.3 (page templates split into 4.3.1 AD / 4.3.2 BH / 4.3.3 SF / 4.3.4 Entra), §5 (component inventory map: rows 21–23 added), §17 anti-patterns (forcing identical bodies is now itself an anti-pattern) all updated.
+- Per-module design docs' "Dashboard" sections must reference their archetype and reuse the same frame + atoms (`REVIEW_NOTES.md` cross-doc check added).
+- The platform still reads as one product (shared frame + atoms) while each module page is genuinely fit-for-purpose. R-0002 ("three dashboards instead of one platform") mitigation is preserved by the shared frame, not by identical bodies.
+Linked: `UI_DESIGN_DIRECTION.md` §1, §3.5, §4.3, `REVIEW_NOTES.md`.
+
+---
+
+### D-0019 — Build started without formal Cycle 1–7 sign-off (accepted-with-risk)
+Date: 2026-05-15
+Status: accepted (with risk noted)
+Owner: Kristof
+Context: `WORKING_APPROACH.md` §18 Definition of Ready requires Cycles 1–7 sign-off and Stage 8 build-prep sign-off before Stage 9 starts. Kristof asked to "try and build something" before any formal cycle sign-off. The risk: the docs may yet shift in ways that require rework of the skeleton.
+Decision: Begin Stage 8.1 (architecture skeleton — no business logic) on informal sign-off. No business code is written; the skeleton is intentionally cheap to throw away if a doc cycle changes the foundation. Cycles 1–7 are still expected — they catch design-level changes; the skeleton is reversible.
+Consequences: `TASKS.md` Stage 8.1 marked `done` for T-6001, T-6002, T-6004, T-6005; T-6003 `blocked` on WSL. No business logic added. If cycles surface a foundational change (e.g., different stack), the skeleton is replaced rather than refactored.
+Linked: `WORKING_APPROACH.md` §18, `TASKS.md` Stage 8.1, `CHANGELOG.md` 2026-05-15 Stage 8.1 entry.
+
+### D-0020 — Tailwind via Play CDN for Stage 8.1; switch to standalone CLI before component-library work
+Date: 2026-05-15
+Status: proposed
+Owner: Claude Code (UX role)
+Context: `WORKING_APPROACH.md` §12 says "no Node SPA". Tailwind is a Node tool by default. Three options were considered: Play CDN (zero setup), Tailwind standalone CLI (single binary, no Node), or full Node + tailwindcss build.
+Decision: Use the **Tailwind Play CDN** for Stage 8.1 only — fastest to ship, no Node, lets us validate the brand tokens / palette / typography without a build step. **Before any component-library work** (named components beyond the first set, or before MVP), switch to the **Tailwind standalone CLI** (single binary, still no Node). The standalone CLI emits the production CSS into `src/platform_core/web/static/styles.css`.
+Consequences: `base.html` loads `tailwindcss` from `cdn.tailwindcss.com` with an inline `tailwind.config` mapping the ACEN palette. `DEVELOPING.md` flags this as a temporary choice. Switch is a one-PR change.
+Linked: `DEVELOPING.md`, `UI_DESIGN_DIRECTION.md` §2.1.
+
+---
+
+### D-0021 — Supporting palette introduced alongside the ACEN brand palette
+Date: 2026-05-15
+Status: proposed
+Owner: Claude Code (UX role) + Kristof
+Context: After the first Stage 8.1 skeleton went live, Kristof said "I don't like the design — we should use the colors in the brand guide, but others can be introduced as well". The brand palette is deep-blue dominant with only two accents (Trinidad / Turquoise), which proved too narrow for module identity, status nuance, and data visualization once the actual UI was rendered.
+Decision: Introduce a **supporting palette** alongside the brand palette. Brand tokens remain the anchor; supporting tokens have **defined roles** so the design does not slide into rainbow. Supporting tokens: `indigo #6366f1` (data viz / info), `violet #a78bfa` (Silverfort), `sky #38bdf8` (Entra), `rose #fb7185` (BloodHound / "high" severity tint), `amber #f59e0b` (warn), `slate #64748b` (muted neutrals). Module category mapping: AD = brand Turquoise (foundational), BloodHound = Rose, Silverfort = Violet, Entra = Sky. Chart series order is deterministic (Turquoise → Indigo → Violet → Sky → Rose → Amber → Slate).
+Strict rules:
+- Trinidad stays reserved for critical/destructive (§2.4); Turquoise stays the default primary action.
+- Supporting tokens never replace brand tokens in chrome (nav, header, page background, primary buttons).
+- Surfaces using a supporting token are always paired with brand chrome.
+- Extending the palette further requires a `REVIEW_NOTES.md` entry.
+Consequences:
+- `UI_DESIGN_DIRECTION.md` §2.1 extended with the supporting palette + module category map.
+- `src/platform_core/module_registry.py` adds an `accent` field per module (Tailwind colour class fragment).
+- `base.html` Tailwind config exposes the supporting tokens plus subtle background gradients (`app-backdrop`, `card-sheen`).
+- Templates updated: `app_header.html` (persona-tinted chip + gradient brand mark), `side_nav.html` (module-accent dots, icons, footer block), `login.html` (2-column layout with persona-tinted radio cards), `home.html` (3 KPI cards with module-accent top stripes, 4-up module strip, layered hero).
+Linked: `UI_DESIGN_DIRECTION.md` §2.1, `module_registry.py`, all templates.
+
+---
+
+### D-0022 — Card rounding raised to 10px (supersedes part of D-0010)
+Date: 2026-05-15
+Status: proposed (pending brand-owner confirmation at Cycle 4 review — Q-0110)
+Owner: Kristof (decision) / Claude Code (UX role drafted the rationale)
+Context: D-0010 capped border-radius at ≤ 2 px on interactive controls (cards, buttons, inputs) to stay close to the ACEN guide's "square corners" rule. After the Stage 8.1 visual pass, Kristof shared three additional reference dashboards ("exon", an insurance dashboard, a SaaS metrics dashboard); all three use noticeably rounded cards (≈ 10–12 px). He confirmed the references' direction is the target. The original ≤ 2 px cap conflicts with the references' modern-dashboard feel.
+Decision: Three rounding tokens for the platform UI:
+- `rounded-xs` = **2 px** — kept for *small* elements (badges, status pills, severity dots, tooltips, table cells).
+- `rounded-control` = **6 px** — buttons, inputs, selects, chips, segmented controls.
+- `rounded-card` = **10 px** — cards, drawers, modals, action panels, hero containers.
+Frames that are *strictly* part of the brand identity (logo lockup, brand-mark squares, decorative geometry) remain square (0 px).
+Consequences:
+- `UI_DESIGN_DIRECTION.md` §2.3 (Spacing and radius) updated.
+- `D-0010` is *amended* — the "≤ 2 px digital adaptation" line is replaced by this three-token model. D-0010 remains in effect for the rest of its content (ACEN brand is the visual source of truth).
+- Brand-owner confirmation is now a Cycle 4 review item (Q-0110 expanded to include this rounding change). If brand owners reject, revert is a one-token change in `base.html` Tailwind config.
+Linked: D-0010 (amended), Q-0110, `UI_DESIGN_DIRECTION.md` §2.3.
+
+---
+
+### D-0023 — UI chrome decoupled from brand-blue; neutral shade scale introduced
+Date: 2026-05-15
+Status: proposed
+Owner: Claude Code (UX role) at Kristof's feedback "I don't like the overkill on blue"
+Context: Previous Stage 8.1 visual passes mapped surface tokens directly to brand-blue (`surface1 = brand-bunting`, `surface2 = brand-jakarta`, `surface3 = brand-minsk`). Result: every card, every chrome surface, and the page background were variations of navy blue. The reference dashboards Kristof shared (especially exon) actually use **neutral dark surfaces** with brand colour as *moments* — chrome is calm, brand pops where it matters.
+Decision: Introduce a **neutral shade scale** (cool dark greys with a 2 % blue tint) and **map UI surface tokens to it**, not to brand-blue. Brand palette remains untouched. Surfaces are now neutral; brand colours are reserved for **brand moments**.
+
+**New shade scale:**
+| Token | Hex | Use |
+|---|---|---|
+| `shade-950` | `#08080d` | Deepest backdrop |
+| `shade-900` | `#0e0e15` | App background base |
+| `shade-850` | `#13131c` | App background top |
+| `shade-800` | `#1a1a23` | Card surface (was `brand-bunting`) |
+| `shade-750` | `#22222e` | Hover / active / drawer (was `brand-jakarta`) |
+| `shade-700` | `#2a2a36` | Dividers / sub-surfaces (was `brand-minsk`) |
+| `shade-600` | `#363645` | Stronger borders |
+| `shade-500` | `#4a4a5c` | Muted text on dark |
+
+**Brand moments where brand-blue still leads** (deliberate, not chrome):
+- Brand mark / logo lockup (Gulf base + Turquoise/Violet overlay).
+- Login left brand-splash pane (Bunting → Jakarta → Gulf gradient — this is the brand identity surface).
+- Brand-blue used as a chart series colour where appropriate (data viz).
+- "ACEN" wordmark.
+
+**What changes in practice:**
+- Cards, headers, side nav, drawers, modals → neutral dark.
+- Hero gradient KPI card retoned: Violet → Indigo → Indigo (no brand-blue in the gradient itself).
+- Backdrop halos retoned: Turquoise top-right + Rose bottom-left (no Violet halo on the navy bg).
+- The whole platform reads neutral with brand moments and supporting colours visible, instead of "everything is navy".
+
+Consequences:
+- `base.html` Tailwind config gains `shade-*` family; `bg`, `bgSoft`, `surface1/2/3` re-pointed to shades; `app-backdrop` updated.
+- `home.html` hero KPI gradient retoned.
+- `UI_DESIGN_DIRECTION.md` §2.1 to be updated at next pass to document the surface/brand split.
+- Brand identity preserved through the moments above; no brand-palette tokens deleted.
+
+Linked: D-0010 (brand source of truth — still in force), D-0021 (supporting palette — unchanged), `UI_DESIGN_DIRECTION.md` §2.1 (to update), `base.html`, `home.html`.
+
+---
+
+*Last updated: 2026-05-15 — D-0012 … D-0023 added (supporting palette + card rounding + neutral chrome).*

@@ -24,6 +24,258 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Real ACEN logo + user profile (header dropdown + /profile route)
+
+Stage: 8.1 (design iteration v5)
+By: Claude Code at Kristof's feedback ("the gui misses a user profile" + "I also added the correct logos").
+
+Added:
+- `src/platform_core/web/static/img/acen-mark.svg` — A-with-Trinidad-orbit brand mark (SVG approximation; navy A + orange→red gradient orbit; orbit weaves behind/in-front of the A).
+- `src/platform_core/web/static/img/acen-wordmark.svg` — Same mark + chunky geometric "CEN" letterforms in Bunting navy.
+- `src/platform_core/web/static/img/README.md` — Documents the path; the official files can be dropped in by Kristof to replace the SVG approximations (same filenames → automatic pickup). Also clarifies that Trinidad-in-the-orbit is **brand identity**, not a critical-state signal — D-0010's "reserve Trinidad" rule applies to CTAs/status surfaces, not to the brand mark itself.
+- `src/platform_core/web/routes/profile.py` — `GET /profile` route stub; renders the synthetic user's details.
+- `src/platform_core/web/templates/profile.html` — Profile page: identity card (avatar + name + email + role pill + persona-key/session/auth state) + a "What this role can do" card with persona-specific Allowed / Hidden / Restricted sections + a POC note about synthetic users.
+
+Changed:
+- `src/platform_core/web/session.py`:
+  - New `User` dataclass (`display_name`, `email`, `role_label`, `accent`, `initials` property derived from the name).
+  - `USERS: dict[Persona, User]` table — synthetic profiles per persona. Consultant = "Kristof Laerenbergh / kristof.laerenbergh@acen.example / ACEN Consultant". Customer personas use fictional names + `.example` email domains (RFC 2606) per D-0011 (synthetic data only).
+  - `get_user(request)` helper alongside `get_persona`.
+- `src/platform_core/web/templating.py` — exposes `users` to Jinja globals.
+- `src/platform_core/web/routes/home.py` — passes `user` to the home template via `get_user`.
+- `src/platform_core/web/templates/base.html` — added Alpine.js v3.x via CDN (defer); per `WORKING_APPROACH.md` §14 stack.
+- `src/platform_core/web/static/styles.css` — `[x-cloak] { display: none !important }` so Alpine elements don't flash before init.
+- `src/platform_core/web/templates/components/app_header.html`:
+  - **Real ACEN brand mark** (`<img src="static/img/acen-mark.svg">`) replaces the placeholder "G" square. "Gravity" wordmark sits beside it.
+  - **User profile dropdown** (Alpine-powered) replaces the persona chip. Trigger = avatar (initials) + name + role + chevron. Open panel contains: a coloured-gradient profile header (avatar / name / email / role pill), menu items (My profile → /profile, Preferences, Project & docs ↗), a "Switch persona (POC)" section listing all three personas with a checkmark on the active one, and a Sign out action in critical-coloured text. Escape closes the panel; outside-click closes.
+- `src/platform_core/web/templates/components/side_nav.html` — profile chip at the bottom now uses the real `user.display_name` / `user.email` / `user.initials` and links to `/profile`. The logout form moved into the header dropdown.
+- `src/platform_core/web/templates/login.html` — left brand pane uses the **real ACEN wordmark** SVG; mobile/responsive header uses the brand mark SVG.
+- `src/platform_core/app.py` — registers the profile router.
+- `tests/test_smoke.py` — assertion updated for the new persona role labels (`Customer · IT Lead`), and a new positive assertion that the synthetic display name (`Marcus Webb`) renders for the IT-Lead persona.
+
+Verified:
+- `pytest -q` → **9 passed** in 0.60s.
+- `ruff check src tests` → **All checks passed**.
+- Live HTTP probes: `/login` 200, POST `/login` 303 → `GET /` 200 → `GET /profile` 200. Response body contains "Kristof Laerenbergh", references `acen-mark.svg`, and includes the `x-cloak` style rule.
+
+Tasks moved: none (still Stage 8.1 visual iteration).
+Decisions: none new; D-0010 (brand) clarified in `static/img/README.md` (Trinidad-in-mark = brand identity, not a critical signal).
+Assumptions: none new.
+Risks: none new.
+Open questions touched: none.
+
+Notes for Kristof:
+- The brand-mark SVGs are **approximations**. Drop the official files at `src/platform_core/web/static/img/acen-mark.svg` and `acen-wordmark.svg` (same filenames) and they're picked up automatically. If the official files are PNG, save as `.png` and update the two `<img>` tags in `app_header.html` + `login.html`.
+- Synthetic email domains use `.example` (RFC 2606) so they read as fake.
+- Real authentication / real users land at MVP (Q-0043).
+
+Recommended next step:
+- Look at <http://127.0.0.1:8001> — header dropdown, side-nav profile chip linking to /profile, login splash with the new wordmark. If close enough, commit. Then move to Stage 8.2 (sample data plan).
+
+---
+
+## 2026-05-15 — Stage 8.1 neutral chrome (pull UI off brand-blue)
+
+Stage: 8.1 (design iteration v4)
+By: Claude Code (UX role) after Kristof: "I don't like the overkill on blue".
+
+Changed:
+- **D-0023 logged** — UI chrome decoupled from brand-blue. Brand palette intact; surface tokens now map to a neutral shade scale.
+- `src/platform_core/web/templates/base.html` Tailwind config:
+  - New `shade-*` family (950 → 500), cool dark greys with a 2 % blue tint.
+  - `bg` `#0a0a12`, `bgSoft` `#13131c` (was `#0c0b24` / `#11102d`, both saturated navy).
+  - `surface1` `#1a1a23` (was Bunting `#1b1b4c`), `surface2` `#22222e` (was Jakarta `#201e5c`), `surface3` `#2a2a36` (was Minsk `#2d2d72`).
+  - `app-backdrop` retoned: Turquoise top-right halo + Rose bottom-left halo over a neutral shade gradient (was a navy-heavy gradient with a violet halo).
+- `src/platform_core/web/templates/home.html` — hero KPI gradient retoned from `from-brand-bunting via-brand-jakarta to-support-indigo/70` (heavy brand-blue) to `from-support-violet/80 via-support-indigo/85 to-support-indigo` (vibrant, no navy in the gradient). Decorative blocks recoloured: Turquoise top-right, Rose bottom-left.
+- `project-management/UI_DESIGN_DIRECTION.md` §2.1 — added the **Neutral shade scale** subsection and the **Brand moments** rule.
+
+**Brand-blue still leads in deliberate moments only:**
+- Brand mark / logo lockup (`brand-gulf` base with Turquoise + Violet overlay).
+- Login left splash pane (`brand-bunting → brand-jakarta → brand-gulf` gradient).
+- "ACEN Gravity" wordmark colour treatment.
+
+**No brand-blue in chrome anywhere:** confirmed via grep — header bg, side nav bg, card bg, drawers, modals, page bg all use `shade-*` or `surface-*` tokens (which now point to shades).
+
+Verified:
+- `pytest -q` → **9 passed** in 0.36s.
+- `ruff check src tests` → **All checks passed**.
+- Live end-to-end: `/login` 200, POST `/login` 303 → `GET /` consultant 200.
+
+Tasks moved: none (still Stage 8.1 visual iteration).
+Decisions:
+- D-0023 UI chrome decoupled from brand-blue; neutral shade scale introduced.
+Assumptions: none new.
+Risks: none new.
+Open questions touched: Q-0111 (Trinidad usage) re-affirmed.
+
+Recommended next step:
+- Visual review at <http://127.0.0.1:8001>. If the chrome reads neutral with brand colour as moments, I commit. If still off, point at what.
+
+---
+
+## 2026-05-15 — Stage 8.1 visual richness pass (rounded cards, gauge, sample chart, profile chip)
+
+Stage: 8.1 (design iteration v3)
+By: Claude Code (UX role) after Kristof shared three additional reference dashboards (exon, an insurance dashboard, a SaaS metrics dashboard) and confirmed "match references at 10–12px" + "full richer redesign of the home overview".
+
+Changed:
+- `UI_DESIGN_DIRECTION.md` §2.3 — radius rule rewritten: `rounded-xs = 2px` (small elements), `rounded-control = 6px` (interactive controls), `rounded-card = 10px` (cards/drawers/modals/hero containers). Pending brand-owner confirmation at Cycle 4 review (Q-0110 extended).
+- `src/platform_core/web/templates/base.html` Tailwind config — added `rounded-card`, `rounded-control`; added card shadow tokens (`shadow-card`, `shadow-cardLg`).
+- `src/platform_core/web/templates/components/`:
+  - **NEW `arc_gauge.html`** — vertical-bar semicircle gauge (System Health style, per reference D). N bars arranged 180°→360° around a centre point; taller toward the middle (bell curve), each bar is a rotated `<rect>`. Filled bars in module accent up to value %, remainder dimmed. Centred percent + caption.
+  - **NEW `sample_chart.html`** — SVG line chart with: gradient-area solid Turquoise→Indigo "actual" series + dashed Violet "predicted" series; grid lines; vertical guide line; data dots at the pinned guide; a hover-style tooltip card (Actual / Predicted / Deviation / Confidence) positioned over the chart; an inset Insight callout in Indigo below the chart.
+  - `side_nav.html` — active nav row is now a **filled tinted pill** with accent border and matching icon colour (per reference D); profile chip added at the bottom of the side nav (avatar circle with persona initial, online dot, persona name, "POC session · synthetic", switch-role icon button).
+  - `app_header.html` — real search input (with disabled state + `⌘K` kbd hint); "Run analysis" key-action button at the right (placeholder); customer/engagement/run breadcrumb-pickers rendered as soft hoverable pill-buttons.
+- `src/platform_core/web/templates/login.html` — radio cards now use `rounded-card` + `shadow-card` / `shadow-cardLg` on checked.
+- `src/platform_core/web/templates/home.html` — fully rebuilt:
+  - Page header with persona crumb + "No data" amber pill.
+  - **Hero gradient KPI card** for Current License Score (Bunting → Jakarta → Indigo gradient) + neutral Target Posture and Opportunity cards (each with accent-coloured top gradient line).
+  - **Mid row (3 + 6 columns):** System Health card with arc gauge (placeholder value 0) + CPU/Mem/Disk mini-KPIs + tenant-state list at the bottom · Risk Forecast card with the sample line chart, 1D/1W/1M/3M segmented control, legend, and Insight callout.
+  - 4-up module strip with hover lift + module-accent top edge.
+  - Bottom hero: empty-state message + 5-step demo journey list with numbered chips coloured by module accent.
+
+Verified:
+- `pytest -q` → **9 passed** in 0.27s (after fixing a divide-by-zero in `arc_gauge.html`).
+- `ruff check src tests` → **All checks passed**.
+- Live HTTP probe end-to-end: `/login` 200, POST `/login` 303 → `GET /` 200.
+
+Tasks moved: still inside Stage 8.1 (T-6002 / T-6005 visual iteration).
+Decisions:
+- D-0022 Card rounding raised to 10px (amends D-0010).
+Assumptions: none new.
+Risks: none new.
+Open questions touched: Q-0110 — extended to include the 10px card rounding for brand-owner confirmation at Cycle 4.
+
+Recommended next step:
+- Visual review at <http://127.0.0.1:8001>. If close enough, I commit (suggested message: *"Visual richness pass: 10px cards, arc gauge, sample chart, profile chip"*). If still off, point out specific elements and I iterate before committing.
+
+---
+
+## 2026-05-15 — Supporting palette + Stage 8.1 reskin
+
+Stage: 8.1 (design iteration)
+By: Claude Code (UX role) at Kristof's feedback: "I don't like the design. we should use the colors in the brand guide, but others can be introduced as well."
+
+Changed:
+- `UI_DESIGN_DIRECTION.md` §2.1 — added a **Supporting palette** subsection: 6 tokens (indigo / violet / sky / rose / amber / slate) with defined roles, plus a **module category colour map** (AD = brand Turquoise, BloodHound = Rose, Silverfort = Violet, Entra = Sky). Strict usage rules so the design stays restrained.
+- `src/platform_core/module_registry.py` — `ModuleStub` gains an `accent` field (Tailwind colour class fragment). AD = `brand-turquoise`; BH = `support-rose`; SF = `support-violet`; Entra = `support-sky`.
+- `src/platform_core/web/templates/base.html` — Tailwind config extended: `support.*` colour family, `bgSoft`, subtle `app-backdrop` radial gradient, `card-sheen`. POC banner restyled to a thinner less-loud row.
+- `src/platform_core/web/templates/components/app_header.html` — persona-tinted chip (each persona gets its own accent: consultant = Turquoise, customer executive = Violet, customer IT lead = Sky), brand mark with gradient overlay, notification dot in Rose.
+- `src/platform_core/web/templates/components/side_nav.html` — module-accent dots that scale on hover, real icons (overview / findings / reports / audit), POC footer block at the bottom of the nav.
+- `src/platform_core/web/templates/login.html` — 2-column layout: left brand pane with decorative shapes in supporting colours + module legend; right persona picker with radio cards that highlight in the persona's accent.
+- `src/platform_core/web/templates/home.html` — three KPI placeholder cards with module-accent top stripes (Turquoise / Violet / Amber), 4-up module strip showing each module's category colour, layered hero with gradient top edge.
+
+Verified:
+- `pytest -q` → **9 passed** in 0.28s.
+- `ruff check src tests` → **All checks passed**.
+- Live server: `/login` 200, `/healthz` 200.
+
+Tasks moved: none (still inside T-6002 / T-6005 scope, just visual iteration).
+Decisions:
+- D-0021 Supporting palette introduced alongside the ACEN brand palette.
+Assumptions: none new. Risks: none new. Open questions touched: Q-0111 (Trinidad usage) now answered in §2.1 strict-rules block.
+
+Recommended next step:
+- Review the new look at <http://127.0.0.1:8001>. If the direction is right, I commit. If specific elements are still off, point them out and I iterate before commit.
+
+---
+
+## 2026-05-15 — Stage 8.1 build started — architecture skeleton runs
+
+Stage: 8.1
+By: Claude Code (DEV role) at Kristof's "let's build" request.
+
+> **Cycle status:** Cycles 1–7 not formally signed off; build started on informal sign-off per D-0019 (accepted-with-risk). Skeleton is intentionally reversible.
+
+Added (code):
+- `pyproject.toml` — Python 3.12+, FastAPI 0.136, Starlette 1.0, SQLAlchemy 2.0, Alembic 1.18, psycopg 3.3, Pydantic 2.13, pydantic-settings 2.14, itsdangerous; dev: ruff 0.15, mypy 2.1, pytest 9.0, httpx 0.28. Editable install ok.
+- `compose.yaml` — podman compose: Postgres 16-alpine on port 5432 (gravity/gravity/gravity). External Postgres pattern per Kristof's choice.
+- `.env.example` — `APP_*` + `DATABASE_URL` + `LOG_LEVEL`.
+- `.gitignore` — Python + venv + tooling caches + `.env*` (with `!.env.example`) + `evidence/` (D-0011).
+- `DEVELOPING.md` — Quickstart for fresh devs.
+- `src/platform_core/`:
+  - `app.py` — FastAPI factory, session middleware, static mount, healthz, route registration.
+  - `settings.py` — pydantic-settings; reads `.env`; exposes paths.
+  - `module_registry.py` — Stage 8.1 stub (`ModuleStub` with id/title/nav_label/icon for AD/BH/SF/Entra). Full `ModuleManifest` lands in Stage 9.
+  - `web/session.py` — `Persona` `StrEnum` (consultant / customer_executive / customer_it_lead) + per-persona nav visibility set + signed session helpers. Per A-0013 (no real auth in POC).
+  - `web/templating.py` — Jinja2 environment with brand globals (modules, persona labels, `is_nav_visible`).
+  - `web/routes/login.py` — GET /login, POST /login, POST /logout.
+  - `web/routes/home.py` — GET / (303 to /login if no persona, otherwise renders home).
+  - `web/templates/base.html` — ACEN-branded shell (Montserrat, Tailwind palette tokens — Jakarta/Bunting/Minsk/Trinidad/Turquoise — square corners, 2px on interactive controls per D-0010, POC banner per `SECURITY_AND_GDPR.md` §18).
+  - `web/templates/components/app_header.html` — header with brand mark, picker placeholders, action icons (disabled), persona chip + Switch role button.
+  - `web/templates/components/side_nav.html` — sectioned nav with persona-aware visibility (consultant sees all; customer roles see compressed Overview/Findings/Reports).
+  - `web/templates/login.html` — persona picker hero card.
+  - `web/templates/home.html` — empty-state hero with persona name + status pills.
+  - `web/static/styles.css` — placeholder.
+- `src/modules/{ad,bloodhound,silverfort,entra}/manifest.py` — module-id stubs (full manifest in Stage 9).
+- `src/modules/{ad,bloodhound,silverfort,entra}/{parsers,models,controls,correlations,reports,ui,tests}/__init__.py` — empty package markers.
+- `tests/test_smoke.py` — 9 smoke tests:
+  - `/healthz` returns 200.
+  - `/` 303 → /login when no persona.
+  - `/login` lists all 3 personas.
+  - Consultant POST /login → home shows full nav (AD, BH, SF, Entra, Findings, Reports, Audit).
+  - Customer Executive → compressed nav (no AD/BH/SF/Entra in nav, no Audit anywhere).
+  - Customer IT Lead → compressed nav.
+  - Unknown persona → 303 back to /login with `error=`.
+  - Logout clears session and redirects.
+  - POC banner visible in dev.
+
+Verified:
+- `pip install -e .[dev]` clean on Python 3.14.3 (uses py312-targeted wheels).
+- `pytest -q` → **9 passed** in 0.27s.
+- `ruff check src tests` → **All checks passed** (after switching `Persona(str, Enum)` → `Persona(StrEnum)`).
+- `uvicorn` boot + `curl /healthz` 200 / `curl /login` 200 / `curl /` 303.
+
+Tasks moved:
+- T-6001 → done (project init).
+- T-6002 → done (FastAPI + Jinja + Tailwind via Play CDN).
+- T-6003 → blocked (Postgres + Alembic — WSL2 Virtual Machine Platform off; Kristof unblocking in parallel).
+- T-6004 → done (folder layout per `MODULE_ARCHITECTURE.md`).
+- T-6005 → done (role-switcher login + per-persona nav visibility).
+
+Decisions:
+- D-0019 Build started without formal Cycle 1–7 sign-off (accepted-with-risk).
+- D-0020 Tailwind via Play CDN for Stage 8.1; switch to standalone CLI before component-library work.
+
+Open questions touched: none new.
+
+Risks touched: R-0010 (Postgres availability) materialised as the WSL/VMP blocker; mitigation in progress (Kristof enabling VMP, then `podman machine start`).
+
+Recommended next step:
+- Once `podman machine start` works, T-6003 lands in ~10 min: bring up `compose.yaml`, `alembic init migrations`, generate the empty baseline.
+- Then continue to **Stage 8.2 (sample data plan)** and **Stage 8.3 (developer handoff doc)** before opening Stage 9.
+
+---
+
+## 2026-05-15 — Module page archetypes (per-module body, shared frame + atoms)
+
+Stage: 4 (UX)
+By: Claude Code (UX role) at Kristof's pushback
+
+Changed:
+- `UI_DESIGN_DIRECTION.md`:
+  - §1 design goal rewritten: same atoms and frame across modules, **module-specific compositions are allowed and expected**.
+  - New "two-layer UI" table (Frame + Atoms identical · Module-specific compositions and components deliberately different).
+  - §3.5 expanded: module-specific named components are first-class library members. Promotion rule defined.
+  - §4.3 split into four module page archetypes:
+    - **4.3.1 AD — Posture** (status cards + control-coverage ring + priority findings).
+    - **4.3.2 BloodHound — Attack-path** (ranked paths dominant + `PathStepList` drawer; no control ring).
+    - **4.3.3 Silverfort — Coverage** (`CoverageMatrix` dominant + coverage-gap priority list).
+    - **4.3.4 Entra — License-aware tenant config** (license-aware status cards + Opportunity card + findings with `LicenseBadge`).
+  - §5 component inventory map: added rows 21 (`PathStepList`), 22 (`CoverageMatrix`), 23 (`LicenseBadge` + `CapabilityTooltip`).
+  - §17 anti-patterns: "forcing identical body layouts across all module pages" is now itself called out as an anti-pattern.
+- `DECISIONS.md` — D-0018 logged.
+- `REVIEW_NOTES.md` — two new cross-doc consistency checks: archetypes per module and named components living in the shared library.
+
+Decisions:
+- D-0018 Module pages use module-specific archetypes built on a shared frame + shared atoms.
+
+Assumptions: none new.
+Risks: none new (R-0002 mitigation preserved via the shared frame rule).
+Open questions touched: none.
+
+---
+
 ## 2026-05-15 — Operating model v2: 9 stages, demo story, vertical slice, sample data, kill criteria, doc control
 
 Stage: 0 (operating model)

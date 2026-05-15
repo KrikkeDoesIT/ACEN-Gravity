@@ -35,6 +35,8 @@
 - [ ] **Synthetic data only** stated in `SECURITY_AND_GDPR.md`, `DECISIONS.md` (D-0011), `RISKS.md` (R-0005), repo README.
 - [ ] **Two scores** (Current License Score + Target Posture Score, gap = Opportunity Score) consistent across `PRODUCT_DESIGN.md`, `LICENSE_MODEL.md`, per-module docs, `UI_DESIGN_DIRECTION.md`.
 - [ ] **Three personas** (ACEN Consultant, Customer Executive, Customer IT Lead) consistent across `PRODUCT_DESIGN.md`, `POC_V1_SCOPE.md`, `UI_DESIGN_DIRECTION.md`, `DISCOVERY_WORKSHOP_ANSWERS.md`.
+- [ ] **Module page archetypes** (Posture / Attack-path / Coverage / License-aware tenant config) — per `UI_DESIGN_DIRECTION.md` §4.3 and `DECISIONS.md` D-0018. Each per-module design doc's "Dashboard" section must reference the correct archetype and reuse the same frame + atoms.
+- [ ] **Module-specific named components** (`PathStepList`, `CoverageMatrix`, `LicenseBadge`, `CapabilityTooltip`) live in the shared library, not in private module folders. Per-module design docs that mention them must point back to `UI_DESIGN_DIRECTION.md` §3.5.
 
 ---
 

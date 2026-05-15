@@ -1,0 +1,27 @@
+# podman compose up -d
+#
+# Brings up Postgres only. The app itself runs on the host (uvicorn --reload).
+# The DB is "external" from the app's perspective; this just makes the
+# external dependency reproducible.
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: gravity-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gravity
+      POSTGRES_PASSWORD: gravity
+      POSTGRES_DB: gravity
+    ports:
+      - "5432:5432"
+    volumes:
+      - gravity-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gravity -d gravity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  gravity-pgdata:

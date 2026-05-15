@@ -217,6 +217,7 @@ Headlines for the next tier (full detail deferred):
 - **Engagement billing integration** (per engagement and/or subscription).
 - **Continuous monitoring** mode for selected modules (e.g., Entra delta queries).
 - **Customer benchmarking** (anonymized industry baselines).
+- **Per-customer co-branding** — customer logo + 3 accent colours (primary + 2 secondary) surfaced in the customer-facing portal and on the Customer Summary report. Strict scope: themes touch *accents only* (chart series, customer-summary CTA tint, report header / cover page). Themes **never** override status colours (ok / warn / critical / neutral / info) or module category colours (AD / BH / SF / Entra) — those carry universal meaning across customers. **The consultant view is never themed.** Co-branding always; full white-label only if commercial positioning supports it (Q-0140, Q-0151). The Customer Summary report is the lowest-friction first version (Q-0101 first).
 
 ---
 

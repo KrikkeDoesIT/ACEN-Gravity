@@ -1,0 +1,11 @@
+/* ACEN Gravity — placeholder static stylesheet.
+ *
+ * Tailwind currently comes from the Play CDN (see base.html) for the
+ * Stage 8.1 skeleton. Switch to the Tailwind standalone CLI or a real
+ * build pipeline before any component-library work begins (D-0020).
+ */
+
+/* Hide Alpine.js elements until Alpine boots so we don't flash open dropdowns. */
+[x-cloak] {
+  display: none !important;
+}

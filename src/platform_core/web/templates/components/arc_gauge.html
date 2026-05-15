@@ -1,0 +1,50 @@
+{#
+  Arc gauge — vertical-bar semicircle (System Health style).
+
+  Usage:
+    {% with value=76, label="System Health", accent="brand-turquoise" %}
+      {% include "components/arc_gauge.html" %}
+    {% endwith %}
+
+  Inputs:
+    - value: 0..100
+    - label: caption below the percentage
+    - accent: Tailwind colour class fragment for filled bars (default brand-turquoise)
+    - bar_count: number of bars (default 32)
+#}
+{% set _accent = accent or 'brand-turquoise' %}
+{% set _bars = bar_count or 32 %}
+{% set _value = value or 0 %}
+
+<div class="relative w-full max-w-[260px] mx-auto select-none">
+  <svg viewBox="0 0 200 110" class="w-full h-auto block">
+    {% set cx = 100 %}
+    {% set cy = 105 %}
+    {% set r_inner = 38 %}
+    {% set r_outer = 92 %}
+    {# Render N bars from 180deg to 360deg (left to right across the top). #}
+    {% for i in range(_bars) %}
+      {% set t = i / (_bars - 1) %}                  {# 0..1 #}
+      {% set angle_deg = 180 + t * 180 %}             {# 180..360 #}
+      {% set angle_rad = angle_deg * 3.14159265 / 180 %}
+      {# Bar length varies smoothly — peak in the middle. #}
+      {% set bell = 1 - ((t - 0.5) * (t - 0.5)) * 4 %}
+      {% set len = (r_outer - r_inner) * (0.55 + 0.45 * bell) %}
+      {# Rotate a vertical bar around (cx, cy); 0 = top. #}
+      {% set rot = angle_deg - 270 %}
+      {% set is_filled = (t * 100) <= _value %}
+      <g transform="translate({{ cx }}, {{ cy }}) rotate({{ rot }})">
+        <rect x="-1.6" y="-{{ r_outer }}" width="3.2" height="{{ len }}"
+              class="{{ is_filled and ('fill-' ~ _accent) or 'fill-white/10' }}"
+              rx="1" />
+      </g>
+    {% endfor %}
+  </svg>
+
+  <div class="absolute inset-x-0 bottom-1 text-center pointer-events-none">
+    <div class="text-4xl font-bold tabular-nums leading-none text-white">
+      {{ _value }}<span class="text-xl text-white/55 font-semibold">%</span>
+    </div>
+    <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 mt-1.5">{{ label or "" }}</div>
+  </div>
+</div>
