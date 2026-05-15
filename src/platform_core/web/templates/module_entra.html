@@ -3,6 +3,26 @@
 {% set active_nav = 'entra' %}
 {% set active_module_id = 'entra' %}
 
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+
+{# License-aware status → accent + label per the 8-value enum (D-0007 / D-0008). #}
+{% set license_meta = {
+  'licensed_enabled':         {'tone': 'brand-turquoise', 'label': 'Licensed · enabled'},
+  'licensed_disabled':        {'tone': 'support-amber',   'label': 'Licensed · disabled'},
+  'licensed_misconfigured':   {'tone': 'support-amber',   'label': 'Licensed · misconfigured'},
+  'not_licensed':             {'tone': 'support-slate',   'label': 'Not licensed'},
+  'requires_add_on':          {'tone': 'support-slate',   'label': 'Requires add-on'},
+  'available_in_higher_tier': {'tone': 'support-slate',   'label': 'In higher tier'},
+  'not_applicable':           {'tone': 'support-slate',   'label': 'Not applicable'},
+  'unknown':                  {'tone': 'support-slate',   'label': 'Unknown'},
+} %}
+
 {% block layout %}
 {% include "components/app_header.html" %}
 <div class="flex">
@@ -13,69 +33,198 @@
       {% include "components/module_header.html" %}
     {% endwith %}
 
-    {# License-aware status cards — placeholders until Entra parser lands (Chunk E).
-       The cards demonstrate the archetype's defining shape: every card carries a
-       LicenseBadge so license context is always visible. #}
-    {% set cards = [
-      {'id': 'lic',    'title': 'Licensing & Capability', 'subtitle': 'Detected SKUs and what they enable', 'license': 'unknown',          'msg': 'Awaiting Entra Graph evidence'},
-      {'id': 'ca',     'title': 'Conditional Access',     'subtitle': 'Baseline / MFA / risk-based',         'license': 'unknown',          'msg': 'Requires entra.conditional-access'},
-      {'id': 'priv',   'title': 'Privileged Roles',       'subtitle': 'Global / Privileged / PIM eligibility','license': 'unknown',         'msg': 'PIM coverage requires Entra ID P2'},
-      {'id': 'auth',   'title': 'Authentication Methods', 'subtitle': 'Weak / phishing-resistant for admins','license': 'unknown',          'msg': 'Method-policy parse pending'},
-      {'id': 'apps',   'title': 'Apps & Service Principals','subtitle': 'High-privilege grants / secrets',    'license': 'unknown',          'msg': 'App-registration scan pending'},
-      {'id': 'hybrid', 'title': 'Hybrid Identity',        'subtitle': 'Entra Connect / synced admins',       'license': 'unknown',          'msg': 'Hybrid join lookup pending'},
-    ] %}
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      {% for c in cards %}
-        <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden">
-          <div class="absolute top-0 left-0 right-0 h-px bg-support-sky/40"></div>
-          <div class="flex items-start justify-between gap-2 mb-3">
-            <div>
-              <div class="text-[11px] uppercase tracking-[0.18em] text-white/45 font-bold">{{ c.title }}</div>
-              <div class="text-[11px] text-white/45 mt-0.5">{{ c.subtitle }}</div>
-            </div>
-            {# License-aware badge (placeholder = unknown) #}
-            <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-support-slate/15 border border-white/10 text-white/55 rounded-xs">
-              <span class="w-1 h-1 bg-support-slate rounded-xs"></span>
-              <span class="text-[10px] uppercase tracking-wide font-bold">Unknown</span>
-            </span>
-          </div>
-          <div class="text-2xl font-bold text-white/35 tabular-nums">—</div>
-          <div class="text-[11px] text-white/45 mt-1">{{ c.msg }}</div>
-        </div>
-      {% endfor %}
-    </div>
-
-    {# Opportunity card — the archetype's defining commercial story #}
-    <div class="bg-surface1 border border-support-violet/30 rounded-card shadow-card p-6 mb-6 relative overflow-hidden">
-      <div class="absolute -top-12 -right-12 w-44 h-44 bg-support-violet/8 rotate-12 rounded-card"></div>
-      <div class="relative">
-        <div class="text-[10px] uppercase tracking-[0.22em] text-support-violet font-bold mb-2">Opportunity card · placeholder</div>
-        <h3 class="text-xl font-bold mb-2">License-aware capability gap</h3>
-        <p class="text-white/65 max-w-2xl leading-relaxed text-sm">
-          Once the Entra parser lands (Chunk E), this card will surface the top capabilities the customer
-          does <span class="text-white font-semibold">not</span> own that would close the largest score gap —
-          e.g., <em>"Identity Protection (Entra ID P2) would enable risk-based Conditional Access and PIM"</em> —
-          with no pricing or sales framing. <code class="text-support-violet">not_licensed</code> never reduces
-          the Current License Score (D-0008).
-        </p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-support-slate/15 border border-white/10 rounded-xs text-[10px] uppercase tracking-wide text-white/55">
-            <span class="w-1 h-1 bg-support-slate rounded-xs"></span> Entra parser
-          </span>
-          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-support-amber/15 border border-support-amber/35 text-support-amber rounded-xs text-[10px] uppercase tracking-wide">
-            <span class="w-1 h-1 bg-support-amber rounded-xs"></span> Chunk E
-          </span>
-        </div>
-      </div>
-    </div>
-
-    {# No-data state for findings #}
-    {% if not findings %}
+    {% if not run or not evidence %}
       {% with headline="No Entra evidence loaded yet",
-              body="The Entra Graph collector (parser + module page data) lands in Chunk E. Until then, this page renders the archetype shape with placeholders so the layout is reviewable." %}
+              body="Run `gravity demo load` to ingest the Contoso Corp Entra Graph bundle." %}
         {% include "components/module_no_data.html" %}
       {% endwith %}
+    {% else %}
+
+      {% set entra_evidence = evidence[0] %}
+      {% set ep = entra_evidence.payload or {} %}
+      {% set owned_capabilities = ep.get('owned_capabilities', []) %}
+      {% set owned_sku_ids = ep.get('owned_sku_ids', []) %}
+      {% set hybrid_admins = ep.get('hybrid_admin_records', []) %}
+
+      {# Top strip — owned SKUs + capability summary #}
+      <div class="bg-surface1 border border-divider rounded-card shadow-card p-5 mb-6">
+        <div class="flex items-start justify-between gap-6 flex-wrap">
+          <div class="grow min-w-0">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold mb-1">Detected license profile</div>
+            <div class="flex flex-wrap gap-2 items-center">
+              {% for sku in owned_sku_ids %}
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-support-sky/15 border border-support-sky/35 text-support-sky rounded-xs text-[11px] uppercase tracking-wide">
+                  <span class="w-1.5 h-1.5 bg-support-sky rounded-xs"></span>{{ sku }}
+                </span>
+              {% endfor %}
+              {% if not owned_sku_ids %}
+                <span class="text-white/45 text-sm">No SKUs detected</span>
+              {% endif %}
+            </div>
+            <div class="text-[12px] text-white/55 mt-3">
+              {{ owned_capabilities|length }} capabilities granted ·
+              <span class="text-white/40">scoring uses owned capabilities only — D-0008</span>
+            </div>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="text-[10px] uppercase tracking-[0.18em] text-white/45 font-bold">Tenant</div>
+            <div class="font-semibold text-white">{{ ep.get('organization', {}).get('displayName', 'Unknown') }}</div>
+            <div class="text-[11px] text-white/45 font-mono">{{ ep.get('tenant_id', '')[:8] }}…</div>
+          </div>
+        </div>
+      </div>
+
+      {# 6 license-aware status cards #}
+      {% set card_defs = [
+        {'id': 'licensing', 'title': 'Licensing & Capability', 'subtitle': 'Detected SKUs and granted capabilities'},
+        {'id': 'ca',        'title': 'Conditional Access',     'subtitle': 'Baseline / MFA / risk-based'},
+        {'id': 'priv',      'title': 'Privileged Roles',       'subtitle': 'Global / Privileged / PIM eligibility'},
+        {'id': 'auth',      'title': 'Authentication Methods', 'subtitle': 'Weak / phishing-resistant for admins'},
+        {'id': 'apps',      'title': 'Apps & Service Principals','subtitle': 'High-privilege grants / long-lived secrets'},
+        {'id': 'hybrid',    'title': 'Hybrid Identity',        'subtitle': 'Entra Connect / synced admins'},
+      ] %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {% for c in card_defs %}
+          {% set card = page_data.by_card.get(c.id) or {} %}
+          {% set card_findings = card.get('findings') or [] %}
+
+          {# Pick the worst license_status across this card's findings for the badge #}
+          {% set worst_status = 'unknown' %}
+          {% set worst_severity = 'info' %}
+          {% set worst_finding_id = none %}
+          {% for f in card_findings %}
+            {% if f.license_status == 'licensed_disabled' or f.license_status == 'licensed_misconfigured' %}
+              {% set worst_status = f.license_status %}
+            {% elif f.license_status == 'not_licensed' and worst_status not in ['licensed_disabled', 'licensed_misconfigured'] %}
+              {% set worst_status = 'not_licensed' %}
+            {% elif worst_status == 'unknown' %}
+              {% set worst_status = f.license_status %}
+            {% endif %}
+            {% if f.severity in ['critical', 'high'] %}
+              {% set worst_severity = f.severity %}
+              {% set worst_finding_id = f.id %}
+            {% elif worst_severity not in ['critical', 'high'] %}
+              {% set worst_severity = f.severity %}
+              {% set worst_finding_id = f.id %}
+            {% endif %}
+          {% endfor %}
+          {% set meta = license_meta.get(worst_status, license_meta['unknown']) %}
+
+          <div class="relative bg-surface1 border border-divider rounded-card shadow-card p-5 overflow-hidden hover:border-{{ meta.tone }}/40 transition">
+            <div class="absolute top-0 left-0 right-0 h-px bg-{{ meta.tone }}/70"></div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div>
+                <div class="text-[11px] uppercase tracking-[0.18em] text-white/45 font-bold">{{ c.title }}</div>
+                <div class="text-[11px] text-white/45 mt-0.5">{{ c.subtitle }}</div>
+              </div>
+              <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-{{ meta.tone }}/15 border border-{{ meta.tone }}/35 text-{{ meta.tone }} rounded-xs shrink-0">
+                <span class="w-1 h-1 bg-{{ meta.tone }} rounded-xs"></span>
+                <span class="text-[10px] uppercase tracking-wide font-bold whitespace-nowrap">{{ meta.label }}</span>
+              </span>
+            </div>
+
+            {% if card_findings %}
+              {# Show the worst finding's title as the card body #}
+              {% set top = card_findings | sort(attribute='risk_score', reverse=true) | first %}
+              <div class="text-sm text-white font-medium mb-2 line-clamp-2">{{ top.title }}</div>
+              <div class="flex items-center justify-between mt-3">
+                <span class="text-[11px] text-white/45 tabular-nums">
+                  {{ card_findings|length }} finding{{ '' if card_findings|length == 1 else 's' }}
+                </span>
+                <a href="/findings/{{ top.id }}" class="text-[11px] text-{{ meta.tone }} hover:underline">
+                  Open →
+                </a>
+              </div>
+            {% else %}
+              <div class="text-sm text-white/35">No findings in this category yet.</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      {# Hybrid admin bridge — the cross-module money shot #}
+      {% if hybrid_admins %}
+      <div class="bg-surface1 border border-support-rose/40 rounded-card shadow-cardLg p-6 mb-6 relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-44 h-44 bg-support-rose/10 rotate-12 rounded-card"></div>
+        <div class="relative">
+          <div class="text-[10px] uppercase tracking-[0.22em] text-support-rose font-bold mb-2">Hybrid admin bridge · {{ hybrid_admins|length }} identity{{ 'ies' if hybrid_admins|length != 1 else '' }}</div>
+          <h3 class="text-xl font-bold mb-2">AD ↔ Entra · compromise on either side compromises both</h3>
+          <p class="text-white/65 max-w-2xl leading-relaxed text-sm mb-5">
+            One account is highly privileged in <span class="text-white">both</span> Active Directory and Microsoft Entra.
+            See <code class="text-support-rose">CORR-AD-ENTRA-001</code> in the Findings list for the
+            full correlation finding and remediation.
+          </p>
+
+          <div class="grid gap-3">
+            {% for record in hybrid_admins %}
+            <div class="bg-surface2/40 border border-divider rounded-control p-4 flex items-center gap-4 flex-wrap">
+              <span class="inline-flex items-center justify-center w-10 h-10 bg-support-rose/20 border border-support-rose/40 rounded-control shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-support-rose"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+
+              <div class="grow min-w-0">
+                <div class="flex items-center gap-2 text-[13px]">
+                  <span class="font-mono text-white">{{ record.ad_sam_account_name }}</span>
+                  <span class="text-[10px] uppercase tracking-wide text-brand-turquoise px-1.5 py-0.5 bg-brand-turquoise/15 border border-brand-turquoise/30 rounded-xs">AD Tier 0</span>
+                </div>
+                <code class="text-[10px] text-white/45 font-mono">{{ record.ad_sid }}</code>
+              </div>
+
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-support-rose shrink-0">
+                <path d="M5 12h14m-7-7 7 7-7 7"/>
+              </svg>
+
+              <div class="grow min-w-0">
+                <div class="flex items-center gap-2 text-[13px]">
+                  <span class="font-mono text-white">{{ record.entra_upn }}</span>
+                  <span class="text-[10px] uppercase tracking-wide text-support-sky px-1.5 py-0.5 bg-support-sky/15 border border-support-sky/30 rounded-xs">Entra GA</span>
+                </div>
+                <div class="text-[11px] text-white/45">{{ record.entra_display_name }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# All Entra findings, by license status #}
+      {% if findings %}
+      <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+        <div class="px-5 py-3 border-b border-divider flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-semibold">All Entra findings</h3>
+            <div class="text-[11px] text-white/45">Grouped by license-aware status (D-0007 / D-0008)</div>
+          </div>
+          <a href="/findings" class="text-[12px] text-brand-turquoise/85 hover:text-brand-turquoise transition">All findings →</a>
+        </div>
+        <ul class="divide-y divide-divider">
+          {% for f in findings %}
+            {% set sev = severity_class.get(f.severity, 'support-slate') %}
+            {% set lic = license_meta.get(f.license_status, license_meta['unknown']) %}
+            <li>
+              <a href="/findings/{{ f.id }}" class="flex items-center gap-4 px-5 py-3 hover:bg-surface2/40 transition">
+                <span class="inline-flex items-center gap-1.5 shrink-0">
+                  <span class="w-2 h-2 bg-{{ sev }} rounded-xs"></span>
+                  <span class="text-[10px] uppercase tracking-wide text-{{ sev }} font-bold w-14">{{ f.severity }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-{{ lic.tone }}/15 border border-{{ lic.tone }}/35 text-{{ lic.tone }} rounded-xs shrink-0">
+                  <span class="w-1 h-1 bg-{{ lic.tone }} rounded-xs"></span>
+                  <span class="text-[10px] uppercase tracking-wide font-bold whitespace-nowrap">{{ lic.label }}</span>
+                </span>
+                <div class="grow min-w-0">
+                  <div class="text-sm text-white truncate">{{ f.title }}</div>
+                  <div class="text-[11px] text-white/45 font-mono truncate">{{ f.category }}</div>
+                </div>
+                <div class="tabular-nums font-semibold text-white/85 shrink-0">{{ f.risk_score }}</div>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
     {% endif %}
 
   </main>

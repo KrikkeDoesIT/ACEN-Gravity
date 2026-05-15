@@ -1,0 +1,15 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#organization",
+  "value": [
+    {
+      "id": "11111111-2222-3333-4444-555555555555",
+      "displayName": "Contoso Corp",
+      "verifiedDomains": [
+        { "name": "contoso.onmicrosoft.com", "type": "Managed", "isDefault": true, "isInitial": true },
+        { "name": "contoso.example",         "type": "Managed", "isDefault": false, "isInitial": false }
+      ],
+      "onPremisesSyncEnabled": true,
+      "onPremisesLastSyncDateTime": "2026-05-15T07:14:22Z"
+    }
+  ]
+}

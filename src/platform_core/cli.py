@@ -19,6 +19,7 @@ from modules.ad.parsers import PrivilegedGroupsParser
 from modules.bloodhound.analyzer import detect_paths
 from modules.bloodhound.findings import generate_finding
 from modules.bloodhound.parsers import SharpHoundParser
+from modules.entra.parsers import EntraGraphBundleParser
 from modules.silverfort.parsers import SilverfortExportParser
 
 # Registry import wires every model onto Base.metadata before we touch the database.
@@ -151,6 +152,28 @@ def demo_load(
             if sf_result.sf_finding_id:
                 console.print("  • [yellow]HIGH    [/] SF-AD-001 Tier 0 coverage gap")
 
+        # 7.5. Entra Graph bundle + 6 Entra controls.
+        entra_folder = fixture_path / "entra"
+        entra_result = None
+        if entra_folder.is_dir():
+            entra_result = EntraGraphBundleParser().parse(
+                folder=entra_folder,
+                session=session,
+                customer_id=customer.id,
+                assessment_run_id=run.id,
+            )
+            console.print(
+                f"[bold]Entra parser:[/] {entra_result.organization_name} · "
+                f"SKUs={','.join(entra_result.owned_sku_ids)} · "
+                f"[red]{entra_result.hybrid_admin_count}[/] hybrid admin(s), "
+                f"[yellow]{entra_result.cloud_only_admin_count}[/] cloud-only admin(s)"
+            )
+            for outcome in entra_result.control_outcomes:
+                console.print(
+                    f"  - {outcome.control_id} :: license_status="
+                    f"[cyan]{outcome.license_status}[/] result=[white]{outcome.result_status}[/]"
+                )
+
         # 8. Cross-module correlation (CORR-BH-SF-001 etc.).
         corr_result = run_correlations(session=session, assessment_run_id=run.id)
         if corr_result.correlations_created:
@@ -178,6 +201,10 @@ def demo_load(
                     "bh_findings_created": findings_created,
                     "sf_finding_id": sf_result.sf_finding_id if sf_result else None,
                     "sf_uncovered_tier0_count": sf_result.uncovered_tier0_count if sf_result else 0,
+                    "entra_finding_ids": [
+                        o.finding_id for o in (entra_result.control_outcomes if entra_result else []) if o.finding_id
+                    ],
+                    "entra_hybrid_admin_count": entra_result.hybrid_admin_count if entra_result else 0,
                     "correlation_finding_ids": corr_result.correlation_finding_ids,
                 },
             )

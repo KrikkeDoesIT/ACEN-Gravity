@@ -159,6 +159,7 @@ def _snapshot_finding(f: Finding) -> dict:
         "category": f.category,
         "severity": f.severity,
         "risk_score": f.risk_score,
+        "license_status": f.license_status,
         "state": f.state,
         "customer_visibility": f.customer_visibility,
         "summary_internal": f.summary_internal,
@@ -299,5 +300,35 @@ def _build_posture_data(finding_rows: list[dict]) -> dict:
 
 
 def _build_license_aware_data(finding_rows: list[dict]) -> dict:
-    """Entra — placeholder until the Entra parser lands (Chunk E)."""
-    return {"capabilities": [], "licensed_sample": []}
+    """Entra — license-aware status cards + hybrid admin highlight.
+
+    Reads the Entra evidence row's payload (owned_skus, hybrid_admin_records,
+    CA policy state, application credential summary) and groups findings by
+    their license_status so the UI can render the 8-value enum.
+    """
+    by_license_status: dict[str, list[dict]] = {}
+    by_category: dict[str, dict] = {}
+    for f in finding_rows:
+        by_license_status.setdefault(f["license_status"], []).append(f)
+        # Map finding category prefix → "card group" id used by the template.
+        cat = f["category"]
+        if cat.startswith("entra.lic."):
+            card_id = "licensing"
+        elif cat.startswith("entra.ca."):
+            card_id = "ca"
+        elif cat.startswith("entra.priv.") or "pim" in cat:
+            card_id = "priv"
+        elif cat.startswith("entra.auth."):
+            card_id = "auth"
+        elif cat.startswith("entra.app."):
+            card_id = "apps"
+        elif cat.startswith("entra.hybrid."):
+            card_id = "hybrid"
+        else:
+            card_id = "other"
+        by_category.setdefault(card_id, {"findings": [], "worst_status": "unknown"})
+        by_category[card_id]["findings"].append(f)
+    return {
+        "by_license_status": by_license_status,
+        "by_card": by_category,
+    }

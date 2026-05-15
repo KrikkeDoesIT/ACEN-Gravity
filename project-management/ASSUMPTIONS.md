@@ -178,6 +178,15 @@ Why: Proves the lifecycle on real wiring before horizontal expansion; protects a
 Impact if wrong: If a stakeholder pushes for parallel module dashboards before the slice is done, we'd reduce architectural confidence and risk demo-state fragility. Re-direct via §6 hard rule.
 Linked: D-0014, `WORKING_APPROACH.md` §6, `TASKS.md` Stage 9.
 
+### A-0019 — Kristof has a test Entra tenant available for MVP validation
+Date: 2026-05-15
+Status: open (informational)
+Owner to validate: Kristof
+Assumption: When the **real** Microsoft Graph collector lands at MVP (per A-0007 / Q-0080), Kristof can provide a test Entra tenant for validation — exercising real application-permissions consent flow, real `subscribedSkus`, real Conditional Access policies, real role assignments, etc. The POC V1 itself uses synthetic Entra fixtures only (D-0011); the test tenant is purely an MVP-stage validation aid.
+Why: Removes the "where do we test the connector?" question from MVP planning. Kristof's offer signals this is solved.
+Impact if wrong: We'd need to find a different validation tenant for MVP (likely an ACEN-owned demo tenant). Low impact.
+Linked: A-0007 (Graph permissions), Q-0080 (consent friction), `ENTRA_MODULE_DESIGN.md`.
+
 ---
 
-*Last updated: 2026-05-15 — A-0016, A-0017, A-0018 added for the 9-stage operating-model update.*
+*Last updated: 2026-05-15 — A-0016, A-0017, A-0018 added for the 9-stage operating-model update; A-0019 added (Entra test tenant available for MVP validation).*

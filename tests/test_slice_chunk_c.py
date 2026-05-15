@@ -119,17 +119,21 @@ def test_correlation_findings_match_path_target_and_pivot_through_gap() -> None:
 
     session: Session = _session_factory()()
     try:
+        # Filter to just BH-SF correlations — Chunk E adds AD-Entra and BH-Entra
+        # correlations to the same `module_id == 'correlation'` bucket.
         corr_findings = (
             session.query(Finding)
-            .filter(Finding.module_id == "correlation")
+            .filter(
+                Finding.module_id == "correlation",
+                Finding.category == "correlation.bh_sf_001",
+            )
             .all()
         )
         # Two cases: paths landing on svc-backup AND paths to DA pivoting through svc-backup.
         # Both fire CORR-BH-SF-001. With the Contoso fixture this yields exactly 5.
         assert len(corr_findings) >= 2
 
-        # Every correlation finding must reference the SF gap (svc-backup) somewhere
-        # on the path.
+        # Every BH-SF correlation must reference the SF gap (svc-backup) somewhere on the path.
         for c in corr_findings:
             assert SVC_BACKUP_SID in c.payload.get("gap_sids", [])
             assert c.payload.get("rule_id") == "CORR-BH-SF-001"

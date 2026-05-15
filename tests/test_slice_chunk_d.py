@@ -166,7 +166,8 @@ def test_silverfort_module_page_renders_coverage_matrix_with_gap() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_entra_module_page_renders_license_aware_placeholders() -> None:
+def test_entra_module_page_renders_license_aware_cards_with_real_data() -> None:
+    """Chunk E populated this page with real data; placeholder copy is gone."""
     _load_contoso()
     c = _client()
     _login(c, "consultant")
@@ -174,17 +175,13 @@ def test_entra_module_page_renders_license_aware_placeholders() -> None:
     assert r.status_code == 200
     body = r.text
     assert "License-aware tenant config" in body
-    # Six placeholder cards. Jinja2 HTML-escapes `&` → `&amp;` in rendered output.
+    # Six card titles. Jinja2 HTML-escapes `&` → `&amp;`.
     assert "Licensing &amp; Capability" in body
     assert "Conditional Access" in body
     assert "Privileged Roles" in body
     assert "Authentication Methods" in body
     assert "Apps &amp; Service Principals" in body
     assert "Hybrid Identity" in body
-    # Opportunity card.
-    assert "Opportunity card" in body
-    # No-data state (Entra parser lands Chunk E).
-    assert "No Entra evidence" in body
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,31 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#subscribedSkus",
+  "value": [
+    {
+      "id": "sku-m365-e3-contoso",
+      "skuId": "05e9a617-0261-4cee-bb44-138d3ef5d965",
+      "skuPartNumber": "SPE_E3",
+      "appliesTo": "User",
+      "capabilityStatus": "Enabled",
+      "consumedUnits": 250,
+      "prepaidUnits": { "enabled": 300, "suspended": 0, "warning": 0 },
+      "servicePlans": [
+        { "servicePlanId": "41781fb2-bc02-4b7c-bd55-b576c07bb09d", "servicePlanName": "AAD_PREMIUM",         "provisioningStatus": "Success", "appliesTo": "User" },
+        { "servicePlanId": "57ff2da0-773e-42df-b2af-ffb7a2317929", "servicePlanName": "TEAMS1",              "provisioningStatus": "Success", "appliesTo": "User" },
+        { "servicePlanId": "199a5c09-e0ca-4e37-8f7c-b05d533e1ea2", "servicePlanName": "MICROSOFTBOOKINGS",   "provisioningStatus": "Success", "appliesTo": "User" }
+      ]
+    },
+    {
+      "id": "sku-aadp1-standalone-contoso",
+      "skuId": "078d2b04-f1bd-4111-bbd4-b4b1b354cef4",
+      "skuPartNumber": "AAD_PREMIUM",
+      "appliesTo": "User",
+      "capabilityStatus": "Enabled",
+      "consumedUnits": 50,
+      "prepaidUnits": { "enabled": 50, "suspended": 0, "warning": 0 },
+      "servicePlans": [
+        { "servicePlanId": "41781fb2-bc02-4b7c-bd55-b576c07bb09d", "servicePlanName": "AAD_PREMIUM",         "provisioningStatus": "Success", "appliesTo": "User" }
+      ]
+    }
+  ]
+}

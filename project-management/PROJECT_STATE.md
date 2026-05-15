@@ -31,7 +31,7 @@ Stage map (full detail in `WORKING_APPROACH.md` §4 — operating model upgraded
 | 6 | POC backlog | 🟡 skeleton in `TASKS.md`; refined after Cycles 1–5 (vertical-slice items must be marked) |
 | 7 | Management review (go/no-go on MVP) | ⬜ pending |
 | 8 | **Build preparation** (final backlog · skeleton · sample data plan · dev handoff · slice tasks ready) | 🟡 **8.1 done** (T-6001/2/4/5; T-6003 blocked on WSL); 8.2 + 8.3 pending |
-| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | 🟢 **Slice complete (A + B + C) + Chunk D horizontal expansion (module pages with archetypes).** Every side-nav module link is now a real page rendering its archetype: AD = Posture, BH = Attack-path, SF = Coverage matrix with gap markers, Entra = License-aware (no-data placeholder until Chunk E). 46/46 tests pass. T-9012 still pending Kristof's walkthrough — but the demo surface is now substantially richer. |
+| 9 | **POC build** (working POC · tests · demo flow · report preview · mgmt review pack) | 🟢 **Slice complete (A+B+C) + horizontal expansion (D+E).** All 4 POC modules are now real: AD (Posture), BloodHound (Attack-path), Silverfort (Coverage matrix with gap markers), Entra (License-aware tenant config with real data — owned SKUs, hybrid admin bridge, 6 controls demonstrating `licensed_enabled` + `licensed_disabled` + `not_licensed`). 18 findings + 6 cross-module correlations (3 BH-SF Critical + 2 BH-SF High + 1 AD-Entra hybrid admin bridge). 60/60 tests pass. T-9012 still pending Kristof's walkthrough. |
 
 ---
 

@@ -24,6 +24,140 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Stage 9 horizontal expansion — Chunk E (Entra module + AD↔Entra correlation)
+
+Stage: 9.6 (Entra module + cross-module correlation expansion)
+By: Claude Code.
+
+Completes the 4-module promise from `POC_V1_SCOPE.md` §5.6. The Entra module
+now ingests a real Graph-shaped JSON bundle, runs 6 controls demonstrating
+all three license-aware states (`licensed_enabled` / `licensed_disabled` /
+`not_licensed`), and contributes to two cross-module correlation rules.
+
+Added — synthetic Entra fixture (`tests/fixtures/contoso/entra/`)
+- `organization.json` — tenant metadata + `onPremisesSyncEnabled`.
+- `subscribedSkus.json` — Contoso owns Microsoft 365 E3 + standalone
+  Entra ID P1; no P2 (per `POC_V1_SCOPE.md` §13).
+- `users.json` — 4 users: `it.admin.kristof` (synced from AD, SID +
+  immutableId match), `regular.user.alice` (synced, non-admin),
+  `cloud.only.admin` (cloud-only Global Admin), `breakglass` (cloud-only).
+- `directoryRoles.json` — Global Administrator, Application Administrator,
+  Hybrid Identity Administrator.
+- `roleAssignments.json` — Tier 0 role grants (kristof, cloud admin,
+  breakglass as GAs; kristof also App Admin).
+- `conditionalAccessPolicies.json` — 2 policies: baseline MFA-for-all
+  (enabled) + "Block legacy authentication" (DISABLED — the
+  `licensed_disabled` demo gap).
+- `applications.json` — 2 apps: Internal Portal (rotated 2024 — fine) +
+  Legacy Reporting App (10-year secret — the long-lived secret demo).
+
+Added — license catalog (`platform_core/licensing/catalog.py`)
+- Hand-curated mapping: Graph SKU UUID → internal SKU id → capability
+  set. Covers M365 E3/E5, Entra ID P1/P2 (standalone), EMS E3/E5,
+  Defender for Identity, Silverfort.
+- `capabilities_for_skus(owned_ids)` and `upgrade_path_for(missing_cap)`
+  helpers used by the parser's `not_licensed` finding template.
+- At MVP this gets replaced with an authoritative source (subscribedSkus
+  via Graph + official Microsoft docs per Q-0071).
+
+Added — Entra parser (`modules/entra/parsers/graph_bundle.py`)
+- Reads the 7 expected Graph JSON files, computes owned SKUs +
+  capabilities, persists one Evidence row with the full payload.
+- **Identity linking**: synced users are linked to existing AD `Identity`
+  rows by `onPremisesSecurityIdentifier` (SID match), falling back to
+  `azure_object_id` for cloud-only accounts. No silent merges (A-0011).
+- Promotes `is_privileged` / `is_tier0` for principals holding Tier 0
+  directory-role assignments (Global Admin, Privileged Role Admin,
+  Hybrid Identity Admin, App Admin, etc.).
+- Computes `hybrid_admin_records` — synced AD ↔ Entra Tier 0 role —
+  which seeds CORR-AD-ENTRA-001 and CORR-BH-ENTRA-001.
+- **6 controls embedded in the parse pass:**
+  - **ENTRA-LIC-001** (info / `licensed_enabled`) — detected SKU profile.
+  - **ENTRA-CA-001** (`licensed_enabled` if baseline MFA-for-all enabled;
+    `licensed_disabled` otherwise). Passes for Contoso.
+  - **ENTRA-CA-003** (`licensed_disabled` / HIGH) — *the headline
+    `licensed_disabled` demo*: Legacy Auth Block policy exists but is
+    disabled.
+  - **ENTRA-PRIV-003** (`not_licensed` / INFO) — *the headline
+    `not_licensed` demo*: PIM requires Entra ID P2 which Contoso does
+    not own. Never reduces Current License Score (D-0008).
+  - **ENTRA-HYBRID-001** (HIGH) — synced privileged accounts surfaced
+    with full AD↔Entra mapping.
+  - **ENTRA-APP-002** (MEDIUM) — long-lived (≥ 365 days) client secrets.
+
+Added — cross-module correlations
+- **CORR-AD-ENTRA-001** — for every hybrid admin record where the AD
+  side is Tier 0, emit a HIGH correlation finding: "Hybrid admin
+  bridge: AD Tier 0 `<sam>` is also Entra `<displayName>`". Risk 78.
+  Idempotent on (run, ad_identity_id).
+- **CORR-BH-ENTRA-001** — for every BH finding whose path target SID
+  matches a hybrid admin, emit a correlation bumped to CRITICAL. Doesn't
+  fire on Contoso (no BH path targets kristof) — verified by test —
+  but the rule's there for tenants where it would.
+
+Added — Entra module page (replaces the Chunk D placeholder)
+- License profile strip (owned SKU pills + capability count).
+- 6 license-aware status cards. Each picks the **worst** license_status
+  from the findings in its category and renders one of 8 license badges
+  (`Licensed · enabled`, `Licensed · disabled`, `Not licensed`, etc.).
+- **Hybrid admin bridge section** — accent-rose card with the AD↔Entra
+  mapping rendered as identity pills with an arrow between them.
+  References CORR-AD-ENTRA-001.
+- All-findings list at the bottom, grouped by license status.
+
+Wiring
+- `src/platform_core/cli.py` extended: runs SF parser, then Entra
+  parser, then correlations. Audit event payload includes
+  `entra_finding_ids` + `entra_hybrid_admin_count`.
+- `_snapshot_finding` in `routes/modules.py` now includes
+  `license_status` (used by the Entra page).
+
+Tests
+- `tests/test_slice_chunk_e.py` — 14 new tests:
+  - Parser: owned SKUs detected, kristof linked to AD by SID +
+    azure_object_id + UPN, cloud-only admins flagged Tier 0.
+  - Each of the 6 controls: LIC-001 info, CA-001 passes when MFA
+    baseline exists, CA-003 fires `licensed_disabled`, PRIV-003 fires
+    `not_licensed` with upgrade path, HYBRID-001 surfaces kristof,
+    APP-002 flags the Legacy Reporting App.
+  - CORR-AD-ENTRA-001 fires for kristof; CORR-BH-ENTRA-001 does NOT
+    fire (rule selectivity).
+  - Entra page renders SKU pills, license badges, hybrid bridge,
+    CORR-AD-ENTRA-001 ref.
+  - Customer executive role on the Entra page: 200 OK; visibility
+    filter prevents internal-only Entra findings from leaking.
+  - License catalog: Graph SKU mapping + capability union + upgrade path.
+
+Verified
+- `pytest -q` → **60 passed** (9 smoke + 9 A + 9 B + 9 C + 10 D + 14 E).
+- `ruff check src tests` → clean. Per-file `noqa: ARG001` on the
+  Entra control helpers (uniform contract).
+- Live demo run: full pipeline lands 18 findings + 6 correlations.
+  Audit-event payload references everything.
+
+Database state after `gravity demo load`:
+| Customers | 1 | Engagements | 1 | Runs | 1 |
+| Evidence  | 4 | Identities | 9 | Findings | 18 | Audit | 1 |
+
+Tasks moved
+- T-3005 (Entra module design) was done in docs; T-9024 (Entra page no-
+  data) → superseded by real-data implementation. New tasks below.
+
+Decisions: none new — D-0007 / D-0008 (license-aware enum + two scores)
+realised in code.
+
+Recommended next step
+- Slice review (T-9012) is now genuinely demoable end-to-end across all
+  four POC modules. Suggested order for the walkthrough: Overview →
+  Findings → BloodHound module (paths) → Silverfort module (CoverageMatrix)
+  → Entra module (license-aware + hybrid bridge) → finding detail →
+  publish → report preview → audit.
+- After review sign-off: Chunk F (Score engine + Overview real data —
+  Current License / Target Posture / Opportunity scores aggregated from
+  the ControlResult-equivalent we have now).
+
+---
+
 ## 2026-05-15 — Stage 9 horizontal expansion — Chunk D (module pages with archetypes)
 
 Stage: 9.8 (horizontal expansion)

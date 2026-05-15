@@ -1,0 +1,41 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications",
+  "value": [
+    {
+      "id": "app-internal-portal",
+      "appId": "55555555-aaaa-bbbb-cccc-000000000001",
+      "displayName": "Contoso Internal Portal",
+      "createdDateTime": "2022-04-18T12:00:00Z",
+      "publisherDomain": "contoso.example",
+      "passwordCredentials": [
+        {
+          "keyId": "psk-001",
+          "displayName": "Old portal secret",
+          "startDateTime": "2022-04-18T12:00:00Z",
+          "endDateTime":   "2025-04-18T12:00:00Z"
+        },
+        {
+          "keyId": "psk-002",
+          "displayName": "Rotated 2024",
+          "startDateTime": "2024-09-01T09:00:00Z",
+          "endDateTime":   "2026-09-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "app-legacy-reporting",
+      "appId": "55555555-aaaa-bbbb-cccc-000000000002",
+      "displayName": "Legacy Reporting App",
+      "createdDateTime": "2021-08-12T10:00:00Z",
+      "publisherDomain": "contoso.example",
+      "passwordCredentials": [
+        {
+          "keyId": "psk-leg-001",
+          "displayName": "Reporting svc principal secret",
+          "startDateTime": "2021-08-12T10:00:00Z",
+          "endDateTime":   "2031-08-12T10:00:00Z"
+        }
+      ]
+    }
+  ]
+}

@@ -52,11 +52,17 @@ def run_correlations(
 ) -> CorrelationResult:
     """Run every correlation rule for the given run.
 
-    For the slice, only CORR-BH-SF-001 is implemented. Adding rules is
-    additive — register a new function below.
+    Rule registry (additive — add a function and call it here):
+      - CORR-BH-SF-001 (Chunk C) — BH path target / pivot in SF coverage gap.
+      - CORR-AD-ENTRA-001 (Chunk E) — AD privileged identity ↔ Entra Tier 0
+        role assignee (hybrid admin bridge).
+      - CORR-BH-ENTRA-001 (Chunk E) — BH critical path target is a hybrid
+        admin (compounds BH + Entra context).
     """
     created: list[str] = []
     created.extend(_corr_bh_sf_001(session=session, assessment_run_id=assessment_run_id))
+    created.extend(_corr_ad_entra_001(session=session, assessment_run_id=assessment_run_id))
+    created.extend(_corr_bh_entra_001(session=session, assessment_run_id=assessment_run_id))
     return CorrelationResult(correlations_created=len(created), correlation_finding_ids=created)
 
 
@@ -258,4 +264,278 @@ def _corr_bh_sf_001(*, session: Session, assessment_run_id: str) -> list[str]:
         session.add(corr)
         session.flush()
         created.append(corr.id)
+    return created
+
+
+# --- CORR-AD-ENTRA-001 --------------------------------------------------------
+
+
+def _corr_ad_entra_001(*, session: Session, assessment_run_id: str) -> list[str]:
+    """CORR-AD-ENTRA-001 — AD privileged identity is also an Entra Tier 0
+    role assignee. The "hybrid admin bridge" — compromise on either side
+    compromises both.
+
+    Reads the Entra evidence row's `hybrid_admin_records` (computed by the
+    Entra parser) and emits ONE correlation finding per AD principal whose
+    AD `is_tier0` is true. Idempotent on (run, ad_identity_id).
+    """
+    entra_evidence = (
+        session.query(Evidence)
+        .filter(
+            Evidence.assessment_run_id == assessment_run_id,
+            Evidence.module_id == "entra",
+            Evidence.evidence_type == "entra-graph-bundle",
+        )
+        .order_by(Evidence.created_at.desc())
+        .first()
+    )
+    if entra_evidence is None:
+        return []
+    hybrid_records = (entra_evidence.payload or {}).get("hybrid_admin_records", [])
+    if not hybrid_records:
+        return []
+
+    created: list[str] = []
+    for record in hybrid_records:
+        if not record.get("is_ad_tier0"):
+            continue
+
+        # Idempotency.
+        existing = (
+            session.query(Finding)
+            .filter(
+                Finding.assessment_run_id == assessment_run_id,
+                Finding.module_id == "correlation",
+                Finding.category == "correlation.ad_entra_001",
+            )
+            .all()
+        )
+        for prev in existing:
+            prev_payload = prev.payload or {}
+            if prev_payload.get("ad_identity_id") == record.get("ad_identity_id"):
+                session.delete(prev)
+
+        identity_refs = [record["ad_identity_id"]] if record.get("ad_identity_id") else []
+
+        title = (
+            f"Hybrid admin bridge: AD Tier 0 `{record['ad_sam_account_name']}` "
+            f"is also Entra `{record['entra_display_name'] or record['entra_upn']}`"
+        )
+        summary_internal = (
+            f"The AD account `{record['ad_sam_account_name']}` (SID {record['ad_sid']}) is "
+            f"a Domain Admin (Tier 0) AND synced to Entra (`{record['entra_upn']}`) where it "
+            "holds Tier 0 directory-role assignments. The accounts share a credential lifecycle. "
+            "Compromise of the AD account compromises the cloud admin role and vice versa."
+        )
+        summary_customer = (
+            "A single identity is highly privileged in both Active Directory and Microsoft "
+            "Entra. Anyone who compromises either side automatically controls the other. "
+            "This 'hybrid admin bridge' is a top-tier risk in hybrid identity environments."
+        )
+        technical_detail = (
+            f"AD identity id:        {record['ad_identity_id']}\n"
+            f"AD sAMAccountName:     {record['ad_sam_account_name']}\n"
+            f"AD SID:                {record['ad_sid']}\n"
+            f"Entra principal id:    {record['entra_principal_id']}\n"
+            f"Entra UPN:             {record['entra_upn']}\n"
+            f"Entra display name:    {record['entra_display_name']}\n"
+            f"Tier 0 (AD):           {record['is_ad_tier0']}"
+        )
+        remediation = (
+            "1. Where business permits, move the cloud-side privileged role to a "
+            "cloud-only admin account (no on-prem counterpart).\n"
+            "2. For unavoidable hybrid admins, apply Tier 0 hardening on BOTH sides: "
+            "PAW + restricted logon + strong password on the AD side; PIM-eligible role "
+            "assignment + phishing-resistant MFA on the Entra side.\n"
+            "3. Exclude admin accounts from Entra Connect sync where the role can be "
+            "fulfilled by a cloud-only identity."
+        )
+
+        finding = Finding(
+            assessment_run_id=assessment_run_id,
+            module_id="correlation",
+            category="correlation.ad_entra_001",
+            title=title,
+            severity=Severity.HIGH.value,
+            risk_score=78,
+            license_status=LicenseStatus.LICENSED_ENABLED.value,
+            state=FindingState.NEW.value,
+            customer_visibility=CustomerVisibility.INTERNAL_ONLY.value,
+            summary_internal=summary_internal,
+            summary_customer=summary_customer,
+            technical_detail=technical_detail,
+            remediation=remediation,
+            payload={
+                "rule_id": "CORR-AD-ENTRA-001",
+                "template_id": "corr-ad-entra-001",
+                "engine_version": CORRELATION_ENGINE_VERSION,
+                "ad_identity_id": record["ad_identity_id"],
+                "ad_sid": record["ad_sid"],
+                "ad_sam_account_name": record["ad_sam_account_name"],
+                "entra_principal_id": record["entra_principal_id"],
+                "entra_upn": record["entra_upn"],
+                "entra_display_name": record["entra_display_name"],
+            },
+            identity_refs=identity_refs,
+        )
+        session.add(finding)
+        session.flush()
+        created.append(finding.id)
+
+    return created
+
+
+# --- CORR-BH-ENTRA-001 --------------------------------------------------------
+
+
+def _corr_bh_entra_001(*, session: Session, assessment_run_id: str) -> list[str]:
+    """CORR-BH-ENTRA-001 — BloodHound critical path target is a hybrid admin.
+
+    For each BH finding whose target SID matches an AD identity that is also
+    an Entra Tier 0 role assignee, emit a correlation finding. This is the
+    full-stack story: BH path lands on the bridge, and the bridge is also a
+    cloud admin, so the blast radius spans both planes.
+    """
+    entra_evidence = (
+        session.query(Evidence)
+        .filter(
+            Evidence.assessment_run_id == assessment_run_id,
+            Evidence.module_id == "entra",
+            Evidence.evidence_type == "entra-graph-bundle",
+        )
+        .order_by(Evidence.created_at.desc())
+        .first()
+    )
+    if entra_evidence is None:
+        return []
+    hybrid_records = (entra_evidence.payload or {}).get("hybrid_admin_records", [])
+    hybrid_by_sid = {r["ad_sid"]: r for r in hybrid_records if r.get("ad_sid")}
+    if not hybrid_by_sid:
+        return []
+
+    bh_findings = (
+        session.query(Finding)
+        .filter(
+            Finding.assessment_run_id == assessment_run_id,
+            Finding.module_id == "bloodhound",
+        )
+        .all()
+    )
+
+    created: list[str] = []
+    for bh in bh_findings:
+        payload = bh.payload or {}
+        target_sid = payload.get("target_sid")
+        if not target_sid or target_sid not in hybrid_by_sid:
+            continue
+        record = hybrid_by_sid[target_sid]
+        source_sid = payload.get("source_sid")
+        steps = payload.get("steps", [])
+
+        # Idempotency.
+        existing = (
+            session.query(Finding)
+            .filter(
+                Finding.assessment_run_id == assessment_run_id,
+                Finding.module_id == "correlation",
+                Finding.category == "correlation.bh_entra_001",
+            )
+            .all()
+        )
+        for prev in existing:
+            prev_payload = prev.payload or {}
+            if (
+                prev_payload.get("bh_source_sid") == source_sid
+                and prev_payload.get("bh_target_sid") == target_sid
+            ):
+                session.delete(prev)
+
+        bumped = (
+            Severity.CRITICAL.value
+            if bh.severity in {Severity.HIGH.value, Severity.MEDIUM.value}
+            else bh.severity
+        )
+        bumped_risk = min(100, int((bh.risk_score or 70) * 1.2))
+
+        identity_refs = list(
+            dict.fromkeys(
+                (bh.identity_refs or [])
+                + ([record["ad_identity_id"]] if record.get("ad_identity_id") else [])
+            )
+        )
+
+        path_summary = " -> ".join(
+            f"{s.get('from_label')} -{s.get('edge_type')}-> {s.get('to_label')}" for s in steps
+        )
+
+        title = (
+            f"Critical: BloodHound path reaches hybrid admin `{record['ad_sam_account_name']}` "
+            f"(also Entra `{record['entra_upn']}`)"
+        )
+        summary_internal = (
+            f"BloodHound found a {len(steps)}-hop path ending at `{record['ad_sam_account_name']}`, "
+            "which is BOTH an AD Tier 0 account AND an Entra Tier 0 role assignee "
+            f"(`{record['entra_upn']}`). Compromise of this account compromises both on-prem AD and "
+            f"the Entra tenant. Path: {path_summary}."
+        )
+        summary_customer = (
+            "An on-prem attack path reaches an account that is highly privileged in both your "
+            "on-premises Active Directory AND your Microsoft Entra tenant. The blast radius of "
+            "this attack spans both environments."
+        )
+        technical_detail = (
+            f"BloodHound finding id: {bh.id}\n"
+            f"AD identity:           {record['ad_sam_account_name']} (SID {record['ad_sid']})\n"
+            f"Entra UPN:             {record['entra_upn']}\n"
+            f"Entra principal id:    {record['entra_principal_id']}\n\n"
+            "Path steps:\n"
+            + "\n".join(
+                f"  {i + 1}. {s.get('from_label')} ({s.get('from_kind')}) "
+                f"-{s.get('edge_type')}-> {s.get('to_label')} ({s.get('to_kind')})"
+                for i, s in enumerate(steps)
+            )
+        )
+        remediation = (
+            "Address both ends of the bridge:\n"
+            "  - AD side: remove the abusable step in the BloodHound path "
+            "(see the linked BH finding).\n"
+            "  - Entra side: move the Tier 0 role from the hybrid account to a "
+            "cloud-only privileged identity, or apply PIM-eligible assignment with "
+            "phishing-resistant MFA so the cloud role cannot be silently abused even if "
+            "the AD account is compromised."
+        )
+
+        corr = Finding(
+            assessment_run_id=assessment_run_id,
+            module_id="correlation",
+            category="correlation.bh_entra_001",
+            title=title,
+            severity=bumped,
+            risk_score=bumped_risk,
+            license_status=LicenseStatus.LICENSED_ENABLED.value,
+            state=FindingState.NEW.value,
+            customer_visibility=CustomerVisibility.INTERNAL_ONLY.value,
+            summary_internal=summary_internal,
+            summary_customer=summary_customer,
+            technical_detail=technical_detail,
+            remediation=remediation,
+            payload={
+                "rule_id": "CORR-BH-ENTRA-001",
+                "template_id": "corr-bh-entra-001",
+                "engine_version": CORRELATION_ENGINE_VERSION,
+                "bh_finding_id": bh.id,
+                "bh_source_sid": source_sid,
+                "bh_target_sid": target_sid,
+                "bh_steps": steps,
+                "ad_identity_id": record["ad_identity_id"],
+                "ad_sam_account_name": record["ad_sam_account_name"],
+                "entra_principal_id": record["entra_principal_id"],
+                "entra_upn": record["entra_upn"],
+            },
+            identity_refs=identity_refs,
+        )
+        session.add(corr)
+        session.flush()
+        created.append(corr.id)
+
     return created

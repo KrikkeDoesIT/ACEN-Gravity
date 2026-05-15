@@ -1,0 +1,62 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+  "value": [
+    {
+      "id": "aaaaaaaa-1201-1201-1201-000000001201",
+      "userPrincipalName": "it.admin.kristof@contoso.example",
+      "displayName": "Kristof — IT Admin",
+      "mail": "it.admin.kristof@contoso.example",
+      "accountEnabled": true,
+      "onPremisesImmutableId": "11111111-1111-1111-1111-000000001201",
+      "onPremisesSyncEnabled": true,
+      "onPremisesSamAccountName": "it.admin.kristof",
+      "onPremisesSecurityIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1201",
+      "assignedLicenses": [
+        { "skuId": "05e9a617-0261-4cee-bb44-138d3ef5d965", "disabledPlans": [] },
+        { "skuId": "078d2b04-f1bd-4111-bbd4-b4b1b354cef4", "disabledPlans": [] }
+      ]
+    },
+    {
+      "id": "aaaaaaaa-1102-1102-1102-000000001102",
+      "userPrincipalName": "alice@contoso.example",
+      "displayName": "Alice (Regular User)",
+      "mail": "alice@contoso.example",
+      "accountEnabled": true,
+      "onPremisesImmutableId": "11111111-1111-1111-1111-000000001102",
+      "onPremisesSyncEnabled": true,
+      "onPremisesSamAccountName": "regular.user.alice",
+      "onPremisesSecurityIdentifier": "S-1-5-21-1234567890-1234567890-1234567890-1102",
+      "assignedLicenses": [
+        { "skuId": "05e9a617-0261-4cee-bb44-138d3ef5d965", "disabledPlans": [] }
+      ]
+    },
+    {
+      "id": "aaaaaaaa-9001-9001-9001-000000009001",
+      "userPrincipalName": "cloud.only.admin@contoso.example",
+      "displayName": "Cloud-Only Admin",
+      "mail": "cloud.only.admin@contoso.example",
+      "accountEnabled": true,
+      "onPremisesImmutableId": null,
+      "onPremisesSyncEnabled": false,
+      "onPremisesSamAccountName": null,
+      "onPremisesSecurityIdentifier": null,
+      "assignedLicenses": [
+        { "skuId": "078d2b04-f1bd-4111-bbd4-b4b1b354cef4", "disabledPlans": [] }
+      ]
+    },
+    {
+      "id": "aaaaaaaa-9002-9002-9002-000000009002",
+      "userPrincipalName": "breakglass@contoso.example",
+      "displayName": "Break-Glass Account",
+      "mail": null,
+      "accountEnabled": true,
+      "onPremisesImmutableId": null,
+      "onPremisesSyncEnabled": false,
+      "onPremisesSamAccountName": null,
+      "onPremisesSecurityIdentifier": null,
+      "assignedLicenses": [
+        { "skuId": "078d2b04-f1bd-4111-bbd4-b4b1b354cef4", "disabledPlans": [] }
+      ]
+    }
+  ]
+}
