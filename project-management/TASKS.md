@@ -132,9 +132,9 @@
 | T-9007 | POC | DEV + UX | done    | `slice` | Finding triage UI — explicit state machine (new ↔ triaged ↔ published ↔ retest_requested ↔ closed); state-transition buttons render only allowed targets |
 | T-9008 | POC | DEV + UX | done    | `slice` | Publish action — composite endpoint that auto-triages, sets visibility (customer_summary or customer_full), marks state=published; one-click from the finding detail |
 | T-9009 | POC | DEV + UX | done    | `slice` | Customer-visible view — list + detail enforce visibility server-side; customer executive sees published findings only and gets 404 (not 403) on `internal_only` ones |
-| T-9010 | POC | DEV + UX | todo    | `slice` | Report preview HTML. **Chunk C.** |
+| T-9010 | POC | DEV + UX | done    | `slice` | Report preview HTML — Internal Detailed (consultant) + Customer Summary (customer roles) variants from the same template; visibility-filtered server-side; headline finding card; per-module sections; severity strip; path with gap markers |
 | T-9011 | POC | DEV | done    | `slice` | Audit log per state change, visibility change, and publish — events with severities `info` / `notable` / `security`; `/audit` view consultant-only |
-| T-9012 | POC | PO + QA | todo    | `slice` | Slice review — demonstrate end-to-end on synthetic data; do **not** expand horizontally before sign-off |
+| T-9012 | POC | PO + QA | todo    | `slice` | Slice review — demonstrate end-to-end on synthetic data. **Ready for walkthrough**: 36/36 tests pass; full demo journey verified end-to-end via HTTP probe. Awaiting Kristof's sign-off before any horizontal expansion. |
 | T-9013 | POC | DEV | done    | `slice` | `gravity demo load` CLI (idempotent on customer/engagement; new run + findings per load) |
 | T-9014 | POC | DEV + UX | done    | `slice` | `/findings` list + `/findings/{id}` detail with `PathStepList`; visibility gate enforced server-side |
 | T-9015 | POC | QA | done    | `slice` | 9 smoke + 9 pipeline + 9 Chunk B tests = **27/27 pass**, lint clean |
@@ -242,6 +242,9 @@ Not in scope yet. Placeholder for when POC sign-off (Cycle 9) approves moving to
 | ID | Tier | Owner | Status | Task |
 |---|---|---|---|---|
 | T-F001 | Full | PO + UX + SA | future | **Per-customer co-branding** — `Customer.brand` JSONB (`{logo_url, primary, secondary1, secondary2}`); theme injection only in customer-facing chrome + Customer Summary report; never overrides status colours or module category colours; consultant view never themed. Q-0151 first; Q-0101 sequenced before. Contrast check + status-collision detection + logo asset constraints designed at that stage. |
+| T-F002 | MVP  | DEV + PO | future | **Xurrent (4me) outbound integration** — push `RemediationTask` rows from a published Finding into ACEN's Xurrent tenant as a service request; persist `xurrent_request_id` + URL on the task; one-way push first (Q-0160), two-way state sync later. Field mapping: Finding.title → SR subject, severity → priority, remediation (markdown) → SR description, identity_refs → affected CI list. UI: a "Send to Xurrent" action on the Finding detail (consultant only). Connector secrets live in the secret manager at MVP (per `SECURITY_AND_GDPR.md` §10). |
+| T-F003 | Full | DEV + PO | future | **Customer-tenant ITSM push (Xurrent / ServiceNow / Jira)** — same shape as T-F002 but pushes into the *customer's* ITSM. Per-customer connector config UI; OAuth/API-token per customer; closed-loop status sync; configurable field mapping. Q-0161. |
+| T-F004 | MVP  | DEV + AD | future | **Xurrent CMDB enrichment** (optional, paired with T-F002) — pull asset ownership / business unit / criticality from Xurrent CMDB onto the `Identity` row so prioritization sentences can read *"this Tier 0 service account is owned by Finance"*. Read-only; cached. |
 
 ---
 

@@ -96,7 +96,12 @@
 
 - **Q-0150 | POC | Kristof** — The most important workshop decision (per discovery template): confirm framing as *"What POC V1 needs to prove using AD/BH/SF/Entra, without becoming a production build."* — agreed? *Why it matters:* anchors the entire program.
 
-## 17. Customer co-branding (Full Product)
+## 17. Outbound integrations
+
+- **Q-0160 | MVP | Kristof + ACEN delivery** — **Xurrent (4me) integration** — at MVP, push a Finding's `RemediationTask` into ACEN's Xurrent tenant as a service request; store `xurrent_request_id` + URL on the task; optional periodic pull of request state to sync the Finding's `state` / `retest_requested`. Open sub-questions: (a) one-way push (simpler) vs two-way sync; (b) automatic per-publish push vs explicit "Send to Xurrent" button; (c) CMDB enrichment scope (asset ownership / business unit / criticality on the `Identity` row); (d) field mapping — Finding.title → SR subject, severity → priority, remediation → SR description, identity_refs → affected CIs. *Why it matters:* ACEN consultants already live in Xurrent during delivery, so this is the highest-leverage outbound integration. It also seeds the pattern for the **Full Product** customer-tenant version (customer's own Xurrent / ServiceNow / Jira).
+- **Q-0161 | Full | Kristof + ACEN sales** — **Customer-tenant ITSM push** — at Full Product, replicate the Xurrent pattern but into the customer's own ITSM (Xurrent / ServiceNow / Jira). Open sub-questions: (a) per-customer connector config UI; (b) OAuth vs API token; (c) closed-loop status sync; (d) custom field mapping per customer. *Why it matters:* big SaaS-platform expectation; sells the platform; needs careful permissioning since data flows outbound to a customer system.
+
+## 18. Customer co-branding (Full Product)
 
 - **Q-0151 | Full | Kristof + ACEN sales** — Per-customer **co-branding scope**: should customers see their **logo + 3 accent colours** (primary + 2 secondary) in their portal and on the Customer Summary report? Strict rules under consideration: themes touch *accents only* (chart series, customer-summary CTA tint, report header); never override status colours (ok / warn / critical / neutral / info) or module category colours (AD / BH / SF / Entra). Customer report theming is the lowest-friction first version. Consultant view never themed. *Why it matters:* commercial positioning (white-label as an add-on or standard), Customer Summary report template (couples directly to Q-0101), customer self-service portal scope (Full Product). Tag: **Full Product**, **not POC**, **probably not MVP** — captured here to prevent scope-creep into POC V1 (R-0001).
 - Sibling: Q-0101 (Customer Summary report co-branding — *first* place this lands once the report exists).

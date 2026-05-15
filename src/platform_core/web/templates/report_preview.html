@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'reports' %}
+
+{% set severity_class = {
+  'critical': 'support-rose',
+  'high':     'support-amber',
+  'medium':   'support-violet',
+  'low':      'support-sky',
+  'info':     'support-slate',
+} %}
+{% set module_accent = {'ad':'brand-turquoise','bloodhound':'support-rose','silverfort':'support-violet','entra':'support-sky','correlation':'support-amber'} %}
+{% set module_title = {'ad':'Active Directory','bloodhound':'BloodHound','silverfort':'Silverfort','entra':'Entra','correlation':'Cross-module correlation'} %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1180px]">
+
+    {# Report cover #}
+    <div class="relative bg-surface1 border border-divider rounded-card shadow-cardLg p-8 mb-6 overflow-hidden">
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-turquoise via-support-violet to-support-rose"></div>
+
+      <div class="flex items-start justify-between gap-6">
+        <div>
+          <div class="text-[10px] uppercase tracking-[0.22em] text-white/40 font-bold mb-1">
+            {% if variant == 'internal' %}Internal Detailed Report{% else %}Customer Summary{% endif %}
+          </div>
+          <h1 class="text-3xl font-bold tracking-tight">{{ customer.name if customer else 'Report' }}</h1>
+          <div class="text-white/65 mt-1 text-sm">
+            {% if engagement %}<span>{{ engagement.name }}</span> · {% endif %}
+            <span>{{ run.name }}</span>
+          </div>
+          <div class="text-white/40 text-[12px] mt-1 tabular-nums">
+            Generated {{ run.created_at.strftime('%Y-%m-%d %H:%M UTC') }}
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <img src="{{ url_for('static', path='img/acen-wordmark.svg') }}" alt="ACEN" class="h-9 ml-auto"/>
+          <div class="text-[10px] uppercase tracking-[0.22em] text-white/40 font-bold mt-1">Gravity · POC V1</div>
+        </div>
+      </div>
+
+      {# Executive summary line #}
+      <p class="mt-6 text-white/80 leading-relaxed max-w-3xl">
+        {% if variant == 'customer' %}
+          This summary highlights the identity-security findings ACEN has chosen to share with you for this engagement. Detailed evidence and consultant working notes remain internal.
+        {% else %}
+          Full assessment view for the ACEN consultant team. All findings, all evidence, internal summaries, technical detail, and remediation guidance are shown.
+        {% endif %}
+      </p>
+
+      {# Severity strip #}
+      <div class="mt-6 flex flex-wrap gap-2 items-center">
+        {% for sev in ['critical', 'high', 'medium', 'low', 'info'] %}
+          {% set n = severity_counts.get(sev, 0) %}
+          {% set tone = severity_class.get(sev, 'support-slate') %}
+          <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xs border
+                       {{ 'bg-' ~ tone ~ '/15 border-' ~ tone ~ '/40 text-' ~ tone if n else 'bg-surface2/40 border-divider text-white/35' }}">
+            <span class="w-1.5 h-1.5 {{ 'bg-' ~ tone if n else 'bg-white/20' }} rounded-xs"></span>
+            <span class="text-[10px] uppercase tracking-wide font-bold">{{ sev }}</span>
+            <span class="text-sm tabular-nums font-semibold">{{ n }}</span>
+          </span>
+        {% endfor %}
+        <span class="ml-2 text-[11px] text-white/55 uppercase tracking-wide">findings shown to {{ persona_label }}</span>
+      </div>
+    </div>
+
+    {# Headline finding #}
+    {% if headline %}
+    {% set hsev = severity_class.get(headline.severity, 'support-slate') %}
+    <div class="bg-surface1 border border-{{ hsev }}/40 rounded-card shadow-cardLg p-8 mb-6 relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-44 h-44 bg-{{ hsev }}/8 rotate-12 rounded-card"></div>
+      <div class="relative">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 bg-{{ hsev }}/15 border border-{{ hsev }}/40 rounded-xs text-[10px] uppercase tracking-[0.18em] text-{{ hsev }} font-bold mb-3">
+          <span class="w-1.5 h-1.5 bg-{{ hsev }} rounded-xs"></span>
+          Headline finding · {{ headline.severity }}
+        </div>
+        <h2 class="text-xl font-bold mb-3 leading-tight">{{ headline.title }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-[13px]">
+          <div class="bg-surface2/40 border border-divider rounded-control p-3">
+            <div class="text-[10px] uppercase tracking-wide text-white/45 mb-1">Risk score</div>
+            <div class="text-2xl font-bold tabular-nums text-{{ hsev }}">{{ headline.risk_score }}<span class="text-base text-white/35"> / 100</span></div>
+          </div>
+          <div class="bg-surface2/40 border border-divider rounded-control p-3">
+            <div class="text-[10px] uppercase tracking-wide text-white/45 mb-1">Source</div>
+            {% set first = (headline.payload.get('bh_steps') or headline.payload.get('steps') or [{}])[0] %}
+            <div class="font-mono text-white/85 truncate">{{ first.get('from_label', '?') }}</div>
+          </div>
+          <div class="bg-surface2/40 border border-divider rounded-control p-3">
+            <div class="text-[10px] uppercase tracking-wide text-white/45 mb-1">Reaches</div>
+            {% set last_steps = headline.payload.get('bh_steps') or headline.payload.get('steps') %}
+            {% set last = last_steps[-1] if last_steps else {} %}
+            <div class="font-mono text-white/85 truncate">{{ last.get('to_label', '?') }}</div>
+          </div>
+        </div>
+
+        <p class="text-white/80 leading-relaxed max-w-3xl">
+          {% if variant == 'customer' %}
+            {{ headline.summary_customer or headline.summary_internal or '' }}
+          {% else %}
+            {{ headline.summary_internal or '' }}
+          {% endif %}
+        </p>
+
+        {% set steps_for_headline = headline.payload.get('bh_steps') or headline.payload.get('steps') %}
+        {% if steps_for_headline %}
+        <div class="mt-5">
+          <div class="text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2">Attack path</div>
+          <ol class="space-y-1.5">
+            {% set gap_sids_on_path = headline.payload.get('gap_sids', []) %}
+            {% for step in steps_for_headline %}
+              {% set is_gap = step.get('to_sid') in gap_sids_on_path %}
+              {% set step_tone = 'support-rose' if is_gap else 'support-slate' %}
+              <li class="flex items-center gap-3 py-1.5 px-3 bg-surface2/40 border border-divider rounded-control text-[12.5px]">
+                <span class="inline-flex items-center justify-center w-6 h-6 bg-{{ step_tone }}/20 border border-{{ step_tone }}/40 rounded-control shrink-0">
+                  <span class="text-[10px] font-bold text-{{ step_tone }}">{{ loop.index }}</span>
+                </span>
+                <span class="font-mono text-white/90 truncate">{{ step.from_label }}</span>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-{{ step_tone }}/15 border border-{{ step_tone }}/40 rounded-xs">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-{{ step_tone }}"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+                  <span class="text-[10px] uppercase tracking-wide text-{{ step_tone }} font-bold">{{ step.edge_type }}</span>
+                </span>
+                <span class="font-mono text-white/90 truncate">{{ step.to_label }}</span>
+                {% if is_gap %}
+                  <span class="ml-auto text-[10px] uppercase tracking-wide text-support-rose font-bold">⚠ SF gap</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        </div>
+        {% endif %}
+
+        {% if headline.remediation %}
+        <div class="mt-5 bg-brand-turquoise/8 border border-brand-turquoise/30 rounded-control p-4">
+          <div class="text-[10px] uppercase tracking-[0.18em] text-brand-turquoise font-bold mb-2">Remediation</div>
+          <pre class="text-[13px] text-white/85 whitespace-pre-wrap font-sans leading-relaxed">{{ headline.remediation }}</pre>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Per-module sections #}
+    {% for module_id in ['correlation', 'bloodhound', 'silverfort', 'ad', 'entra'] %}
+      {% if by_module.get(module_id) %}
+      {% set accent = module_accent.get(module_id, 'support-slate') %}
+      <section class="mb-5">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="inline-flex items-center justify-center w-8 h-8 bg-{{ accent }}/15 border border-{{ accent }}/40 rounded-control">
+            <span class="w-2 h-2 bg-{{ accent }} rounded-xs"></span>
+          </span>
+          <h3 class="text-lg font-bold">{{ module_title.get(module_id, module_id) }}</h3>
+          <span class="text-[12px] text-white/45 tabular-nums">{{ by_module[module_id]|length }} finding{{ '' if by_module[module_id]|length == 1 else 's' }}</span>
+        </div>
+
+        <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden divide-y divide-divider">
+          {% for f in by_module[module_id] %}
+            {% set fsev = severity_class.get(f.severity, 'support-slate') %}
+            <article class="p-5">
+              <div class="flex items-start justify-between gap-4 mb-2">
+                <div class="grow">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 bg-{{ fsev }}/15 border border-{{ fsev }}/40 rounded-xs">
+                      <span class="w-1 h-1 bg-{{ fsev }} rounded-xs"></span>
+                      <span class="text-[10px] uppercase tracking-wide text-{{ fsev }} font-bold">{{ f.severity }}</span>
+                    </span>
+                    <span class="text-[10px] text-white/35 font-mono">{{ f.category }}</span>
+                    {% if variant == 'internal' %}
+                      <span class="text-[10px] px-1.5 py-0.5 bg-surface3/30 text-white/65 rounded-xs uppercase tracking-wide">{{ f.state }}</span>
+                    {% endif %}
+                  </div>
+                  <h4 class="font-semibold text-white">{{ f.title }}</h4>
+                </div>
+                <div class="text-right shrink-0">
+                  <div class="text-[10px] uppercase tracking-wide text-white/45">Risk</div>
+                  <div class="text-xl font-bold tabular-nums text-white">{{ f.risk_score }}</div>
+                </div>
+              </div>
+
+              <p class="text-[13.5px] text-white/80 leading-relaxed mt-3">
+                {% if variant == 'customer' %}
+                  {{ f.summary_customer or '' }}
+                {% else %}
+                  {{ f.summary_internal or '' }}
+                {% endif %}
+              </p>
+
+              {% if f.technical_detail %}
+              <details class="mt-3 group">
+                <summary class="cursor-pointer text-[11px] uppercase tracking-[0.18em] text-white/45 hover:text-white/80 select-none transition">
+                  Technical detail
+                </summary>
+                <pre class="mt-2 text-[12px] text-white/75 whitespace-pre-wrap font-mono leading-relaxed bg-surface2/40 border border-divider rounded-control p-3">{{ f.technical_detail }}</pre>
+              </details>
+              {% endif %}
+
+              {% if f.remediation %}
+              <details class="mt-2 group">
+                <summary class="cursor-pointer text-[11px] uppercase tracking-[0.18em] text-brand-turquoise/85 hover:text-brand-turquoise select-none transition">
+                  Remediation
+                </summary>
+                <pre class="mt-2 text-[12.5px] text-white/85 whitespace-pre-wrap font-sans leading-relaxed bg-brand-turquoise/5 border border-brand-turquoise/20 rounded-control p-3">{{ f.remediation }}</pre>
+              </details>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Footer #}
+    <div class="text-center text-[11px] text-white/40 mt-10 pb-8">
+      ACEN Gravity · POC V1 · Synthetic data only ·
+      <a href="/findings" class="text-brand-turquoise/70 hover:text-brand-turquoise">Back to findings</a>
+    </div>
+
+  </main>
+</div>
+{% endblock %}

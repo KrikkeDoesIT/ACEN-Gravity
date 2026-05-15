@@ -24,6 +24,138 @@ Open questions touched:
 
 ---
 
+## 2026-05-15 — Stage 9 vertical slice — Chunk C (Silverfort + correlation + HTML report)
+
+Stage: 9.0 (vertical slice — Chunk C of 3) — **slice complete**, awaiting T-9012 review
+By: Claude Code.
+
+Closes the full demo story per `WORKING_APPROACH.md` §3:
+
+> *"We upload AD evidence, BloodHound data, Silverfort evidence and mocked
+> Entra data for one customer. The platform identifies a critical AD attack
+> path, shows that the involved account lacks Silverfort coverage, links
+> the account to Entra privileged context, generates a prioritized finding,
+> creates a remediation task, and produces a customer-ready report section."*
+
+(Entra is mocked for the slice as planned; the headline correlation lands
+without it.)
+
+Added — Silverfort fixture
+- `tests/fixtures/contoso/silverfort/export.json` — 2 policies (1 enabled
+  Tier 0 MFA policy; 1 disabled service-account policy). The enabled
+  policy targets Domain Admins + Enterprise Admins as groups, and
+  it.admin.kristof as a direct user, **but explicitly excludes
+  svc-backup** — the realistic gap consultants see in real Silverfort
+  deployments (service accounts can't interactively MFA, so they get
+  exempted).
+
+Added — Silverfort module
+- `src/modules/silverfort/parsers/export.py` — reads the export bundle,
+  computes coverage (direct target users + Tier-0-group expansion via
+  Identity rows from the AD parser, minus excluded users), emits the
+  `SF-AD-001 Tier 0 Coverage Gap` Finding (HIGH, risk=72) when any Tier 0
+  user is uncovered. Payload contains the uncovered SIDs, friendly
+  labels, and which policy excluded them.
+
+Added — cross-module correlation
+- `src/platform_core/correlations/__init__.py` — `run_correlations()`
+  orchestrator + `CORR-BH-SF-001` rule. For every BloodHound finding, the
+  rule checks whether any identity on the path (target OR intermediate
+  pivot) is in the Silverfort coverage gap. Two outcomes:
+  - **Pivot through the gap** (path target ∉ gap, but a step is) →
+    severity bumped one rung (HIGH → CRITICAL); risk_score × 1.15.
+    Title: *"Critical correlation: BloodHound path to Tier 0 (`Domain
+    Admins`) pivots through `svc-backup`, which is excluded from
+    Silverfort coverage"*.
+  - **Path lands on the gap** (target ∈ gap) → bumped (MEDIUM → HIGH).
+    Title: *"BloodHound path reaches `svc-backup` AND that account is
+    excluded from Silverfort coverage"*.
+  - Idempotent on (run, BH source SID, BH target SID).
+  - Identity refs aggregated from BH + the gap account.
+  - All consistent with D-0005 (deterministic; no AI).
+
+Added — CLI integration
+- `gravity demo load` extended: runs the SF parser after BH, then runs
+  correlations. Audit event `demo.load` payload now includes
+  `sf_uncovered_tier0_count` + `correlation_finding_ids`.
+
+Added — Reports UI
+- `src/platform_core/web/routes/reports.py`:
+  - `GET /reports` — list of assessment runs with customer/engagement
+    breadcrumbs, severity counts, and a variant chip showing whether the
+    role will see Internal Detailed or Customer Summary.
+  - `GET /reports/{run_id}` — HTML report preview rendered from
+    `report_preview.html`. Same template, two variants: consultant sees
+    every finding + internal summaries + technical details + remediation;
+    customer roles see only `customer_summary` / `customer_full`
+    findings, customer-framed summaries, technical detail collapsed
+    behind `<details>` for `customer_full` only.
+  - Headline finding selected automatically: highest-severity
+    `correlation` finding if any, else highest-severity overall.
+  - Visibility filter server-side (defense in depth).
+- `src/platform_core/web/templates/reports_list.html` + `report_preview.html`:
+  - Cover page with ACEN wordmark + customer + engagement + run + UTC
+    timestamp + executive sentence + severity strip.
+  - Headline finding card with risk/source/reaches mini-cards + the
+    attack path rendered as a step list with **`⚠ SF gap`** markers on
+    the uncovered hops.
+  - Per-module sections (correlation / BH / SF / AD / Entra) in priority
+    order, each with severity pill, category, state (internal only),
+    risk score, finding summary, collapsible technical-detail block,
+    collapsible remediation block.
+- `side_nav.html`: `/reports` link real + active-pill aware.
+
+Tests
+- `tests/test_slice_chunk_c.py` — 9 new tests:
+  - SF parser identifies svc-backup as the uncovered Tier 0.
+  - `SF-AD-001` finding emitted at HIGH severity.
+  - Correlation findings: every one references the SF gap; headline is
+    CRITICAL "pivots through" with friendly labels.
+  - Idempotency: 2× `demo load` → 2 runs with identical per-run
+    correlation counts.
+  - `/reports` list: consultant sees "Internal detailed", customer
+    executive sees "Customer summary".
+  - `/reports/{run_id}` preview:
+    - Consultant: "Internal Detailed Report" + Technical detail block +
+      "Domain Admins" + "svc-backup" + "GenericAll".
+    - Customer executive (after publish at `customer_summary`):
+      "Customer Summary" + headline phrase ("An attack path…") + no
+      `Summary — internal` block.
+    - `customer_full` published: technical detail visible.
+
+Verified
+- `pytest -q` → **36 passed** (9 smoke + 9 A + 9 B + 9 C).
+- `ruff check src tests` → clean.
+- Live HTTP probe: consultant `/reports/{id}` 200; publishes headline
+  correlation 303; customer-exec `/reports` 200 + `/reports/{id}` 200
+  with "Critical correlation", "Domain Admins", "svc-backup", and "SF gap"
+  all rendering.
+
+Tasks moved
+- T-9010 (report preview HTML) → done.
+- T-9012 (slice review) → still todo but **ready for the walkthrough**:
+  the slice runs end-to-end, no manual hacks, all assertions hold.
+
+Also logged in this session
+- Q-0160 (Xurrent / 4me outbound integration at MVP) + Q-0161
+  (customer-tenant ITSM push at Full Product) in `OPEN_QUESTIONS.md` §17.
+- T-F002 (Xurrent integration), T-F003 (customer-tenant ITSM), T-F004
+  (Xurrent CMDB enrichment) in `TASKS.md` Future / Full Product backlog.
+- `PRODUCT_DESIGN.md` §12 (MVP) mentions outbound integrations starting
+  with Xurrent.
+
+Decisions: (no new D-NNNN — Chunk C uses the existing decision set).
+
+Recommended next step
+- **T-9012 slice review** with Kristof: live walk of the demo journey
+  end-to-end at <http://127.0.0.1:8001>. If approved, the POC is feature-
+  complete for the management Cycle 7 decision. The remaining Stage 9
+  work is then horizontal expansion (other module pages, additional
+  controls), which per `WORKING_APPROACH.md` §6 only starts after slice
+  review.
+
+---
+
 ## 2026-05-15 — Stage 9 vertical slice — Chunk B (triage → publish → audit per state change)
 
 Stage: 9.0 (vertical slice — Chunk B of 3)

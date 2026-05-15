@@ -1,0 +1,36 @@
+{
+  "schema": "silverfort-export/v1",
+  "tenant": {
+    "name": "Contoso Silverfort",
+    "id": "sf-contoso"
+  },
+  "policies": [
+    {
+      "id": "pol-tier0-mfa",
+      "name": "Tier 0 — MFA on every authentication",
+      "enabled": true,
+      "action": "require_mfa",
+      "target_group_sids": [
+        "S-1-5-21-1234567890-1234567890-1234567890-512",
+        "S-1-5-21-1234567890-1234567890-1234567890-519"
+      ],
+      "target_user_sids": [
+        "S-1-5-21-1234567890-1234567890-1234567890-1201"
+      ],
+      "excluded_user_sids": [
+        "S-1-5-21-1234567890-1234567890-1234567890-1202"
+      ],
+      "notes": "Excludes svc-backup so the nightly backup job does not require interactive MFA. THIS IS THE COVERAGE GAP."
+    },
+    {
+      "id": "pol-service-accounts",
+      "name": "Service accounts — Restrict to source hosts",
+      "enabled": false,
+      "action": "restrict_source",
+      "target_group_sids": [],
+      "target_user_sids": [],
+      "excluded_user_sids": [],
+      "notes": "Drafted but not enabled. Would close the svc-backup gap if rolled out with svc-backup pinned to its backup-host source."
+    }
+  ]
+}

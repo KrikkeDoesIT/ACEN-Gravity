@@ -205,6 +205,7 @@ Headlines for the next tier (full detail deferred):
 - **Retest:** real retest workflow (mark finding "retest requested" → consultant re-evaluates → status update).
 - **Reports:** PDF support standard.
 - **Operations:** logging, monitoring, basic SLA.
+- **Outbound integrations — Xurrent (4me) first:** push `RemediationTask`s from published findings into ACEN's Xurrent tenant as service requests; persist the ticket id + URL on the task; one-way push first, two-way state sync later (Q-0160, T-F002). Optional CMDB enrichment pulls asset ownership / business unit / criticality back onto the `Identity` row (T-F004). Same shape extends to customer-tenant ITSM push at Full Product (Q-0161, T-F003).
 
 ---
 

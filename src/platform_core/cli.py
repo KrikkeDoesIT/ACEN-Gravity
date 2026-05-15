@@ -19,9 +19,11 @@ from modules.ad.parsers import PrivilegedGroupsParser
 from modules.bloodhound.analyzer import detect_paths
 from modules.bloodhound.findings import generate_finding
 from modules.bloodhound.parsers import SharpHoundParser
+from modules.silverfort.parsers import SilverfortExportParser
 
 # Registry import wires every model onto Base.metadata before we touch the database.
 from platform_core.audit.models import AuditEvent
+from platform_core.correlations import run_correlations
 from platform_core.db import _session_factory
 from platform_core.evidence.models import Evidence
 from platform_core.findings.models import Finding
@@ -130,7 +132,34 @@ def demo_load(
                 f"  • [red]{result.severity.upper():<8}[/] {result.title}"
             )
 
-        # 7. Audit log.
+        # 7. Silverfort evidence + SF-AD-001 (Tier 0 coverage gap) finding.
+        sf_path = fixture_path / "silverfort" / "export.json"
+        sf_result = None
+        if sf_path.exists():
+            sf_result = SilverfortExportParser().parse(
+                path=sf_path,
+                session=session,
+                customer_id=customer.id,
+                assessment_run_id=run.id,
+            )
+            console.print(
+                f"[bold]Silverfort parser:[/] {sf_result.policy_count} policies "
+                f"({sf_result.enabled_policy_count} enabled), "
+                f"{sf_result.covered_count} identities covered, "
+                f"[red]{sf_result.uncovered_tier0_count}[/] Tier 0 uncovered"
+            )
+            if sf_result.sf_finding_id:
+                console.print("  • [yellow]HIGH    [/] SF-AD-001 Tier 0 coverage gap")
+
+        # 8. Cross-module correlation (CORR-BH-SF-001 etc.).
+        corr_result = run_correlations(session=session, assessment_run_id=run.id)
+        if corr_result.correlations_created:
+            console.print(
+                f"[bold]Correlation engine:[/] [red]{corr_result.correlations_created}[/] "
+                "cross-module finding(s)"
+            )
+
+        # 9. Audit log.
         session.add(
             AuditEvent(
                 actor_role="cli",
@@ -146,7 +175,10 @@ def demo_load(
                     "ad_identities_created": ad_result.identities_created,
                     "bh_node_count": parsed.node_count,
                     "bh_edge_count": parsed.edge_count,
-                    "findings_created": findings_created,
+                    "bh_findings_created": findings_created,
+                    "sf_finding_id": sf_result.sf_finding_id if sf_result else None,
+                    "sf_uncovered_tier0_count": sf_result.uncovered_tier0_count if sf_result else 0,
+                    "correlation_finding_ids": corr_result.correlation_finding_ids,
                 },
             )
         )

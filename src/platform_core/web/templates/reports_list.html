@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% set active_nav = 'reports' %}
+
+{% block layout %}
+{% include "components/app_header.html" %}
+<div class="flex">
+  {% include "components/side_nav.html" %}
+  <main class="grow px-8 py-8 max-w-[1480px]">
+
+    <div class="mb-6">
+      <div class="text-[11px] uppercase tracking-[0.18em] text-white/40 font-bold mb-2">Reports</div>
+      <h1 class="text-3xl font-bold tracking-tight">{{ rows|length }} report{{ '' if rows|length == 1 else 's' }}</h1>
+      <p class="text-white/55 mt-1 max-w-2xl">
+        {% if persona.value == 'consultant' %}
+          One report per assessment run — both the <strong>Internal Detailed</strong> view (for ACEN) and the <strong>Customer Summary</strong> view (per `SECURITY_AND_GDPR.md` §17) render from the same data, filtered by your role.
+        {% else %}
+          The most recent assessment for your engagement. Click to view.
+        {% endif %}
+      </p>
+    </div>
+
+    {% include "components/flash.html" %}
+
+    {% if rows %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card overflow-hidden">
+      <div class="grid grid-cols-12 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40 font-bold border-b border-divider">
+        <div class="col-span-3">Customer / Engagement</div>
+        <div class="col-span-3">Assessment run</div>
+        <div class="col-span-2">Generated</div>
+        <div class="col-span-2 text-right">Findings</div>
+        <div class="col-span-2 text-right">Variant</div>
+      </div>
+      <ul class="divide-y divide-divider">
+        {% for r in rows %}
+          <li>
+            <a href="/reports/{{ r.run_id }}" class="grid grid-cols-12 px-5 py-4 hover:bg-surface2/40 transition items-center">
+              <div class="col-span-3">
+                <div class="text-white font-semibold truncate">{{ r.customer_name }}</div>
+                <div class="text-[12px] text-white/55 truncate">{{ r.engagement_name }}</div>
+              </div>
+              <div class="col-span-3">
+                <div class="text-white/85 truncate">{{ r.run_name }}</div>
+                <code class="text-[10px] text-white/40 font-mono">{{ r.run_id[:8] }}…</code>
+              </div>
+              <div class="col-span-2 text-[12px] text-white/65 tabular-nums">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+              <div class="col-span-2 text-right">
+                <span class="inline-flex items-center gap-2">
+                  {% if r.findings_critical %}
+                    <span class="px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-support-rose/15 text-support-rose rounded-xs border border-support-rose/30 tabular-nums">{{ r.findings_critical }} crit</span>
+                  {% endif %}
+                  {% if r.findings_high %}
+                    <span class="px-1.5 py-0.5 text-[10px] uppercase tracking-wide bg-support-amber/15 text-support-amber rounded-xs border border-support-amber/30 tabular-nums">{{ r.findings_high }} high</span>
+                  {% endif %}
+                  <span class="text-white/85 tabular-nums font-semibold">{{ r.findings_total }}</span>
+                </span>
+              </div>
+              <div class="col-span-2 text-right">
+                {% if r.variant == 'internal' %}
+                  <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-brand-turquoise/15 text-brand-turquoise border border-brand-turquoise/30 rounded-xs text-[10px] uppercase tracking-wide">Internal detailed</span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-support-violet/15 text-support-violet border border-support-violet/30 rounded-xs text-[10px] uppercase tracking-wide">Customer summary</span>
+                {% endif %}
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <div class="bg-surface1 border border-divider rounded-card shadow-card p-10 text-center">
+      <h2 class="text-lg font-semibold">No assessment runs yet</h2>
+      <p class="text-white/55 mt-1 text-sm">
+        Run <code class="text-brand-turquoise bg-surface2 px-1.5 py-0.5 rounded-xs">gravity demo load</code> to load the Contoso Corp fixture.
+      </p>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}
